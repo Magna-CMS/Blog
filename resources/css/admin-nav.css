@@ -1,0 +1,127 @@
+/*
+ * WordPress-style hover flyout submenus for the Magna Blog admin sidebar group.
+ *
+ * admin-nav.js tags each managed child list with `.mg-flyout` and teleports it
+ * to <body> while open (see that file for why). Because the open popover lives
+ * outside the sidebar, its appearance is keyed on the `.mg-flyout` class alone
+ * rather than on a `.fi-sidebar-group` ancestor selector — the class is only
+ * ever added to Magna Blog child lists, so nothing else is affected.
+ *
+ * Theming is driven by the `.dark` class Filament stamps on <html> (the panel's
+ * real theme toggle), NOT `prefers-color-scheme` — the OS setting and the
+ * selected panel theme can disagree, and following the OS would paint a dark
+ * card behind light-themed rows (or vice versa).
+ */
+
+.fi-sidebar-group[data-group-label="Magna Blog"] .fi-sidebar-group-items > .fi-sidebar-item {
+    position: relative;
+}
+
+/* The parent items carry a blank url (so Filament renders their child list),
+ * which strips the usual link affordance — restore the pointer cursor since
+ * admin-nav.js makes the label navigate to its first child. */
+.fi-sidebar-group[data-group-label="Magna Blog"] > .fi-sidebar-group-items > .fi-sidebar-item > .fi-sidebar-item-btn {
+    cursor: pointer;
+}
+
+/* ── Popover surface (light theme is the default) ──────────────────────────── */
+.fi-sidebar-sub-group-items.mg-flyout {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 50;
+    min-width: 12rem;
+    max-width: 18rem;
+    margin: 0;
+    padding: 0.375rem;
+    list-style: none;
+    border-radius: 0.625rem;
+    border: 1px solid var(--gray-200);
+    background: var(--color-white, #fff);
+    box-shadow:
+        0 10px 15px -3px rgb(0 0 0 / 0.1),
+        0 4px 6px -4px rgb(0 0 0 / 0.1),
+        0 0 0 1px rgb(0 0 0 / 0.02);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateX(-0.375rem);
+    transition:
+        opacity 0.12s ease,
+        transform 0.12s ease,
+        visibility 0.12s;
+}
+
+.fi-sidebar-sub-group-items.mg-flyout.mg-flyout-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(0);
+}
+
+/* The connector "rail" lines only make sense for an inline indented list; hide
+ * them so each flyout row reads as a normal menu entry. */
+.mg-flyout .fi-sidebar-item-grouped-border {
+    display: none;
+}
+
+/* ── Rows (light theme) ────────────────────────────────────────────────────── */
+.mg-flyout .fi-sidebar-item-btn {
+    gap: 0.5rem;
+    padding-block: 0.4rem;
+    padding-inline: 0.55rem;
+    border-radius: 0.375rem;
+    color: var(--gray-700, #374151);
+    font-weight: 500;
+}
+
+.mg-flyout .fi-sidebar-item-btn .fi-sidebar-item-icon {
+    color: var(--gray-400, #9ca3af);
+}
+
+.mg-flyout .fi-sidebar-item-btn:hover {
+    background-color: var(--gray-100, #f3f4f6);
+    color: var(--gray-900, #111827);
+}
+
+.mg-flyout .fi-sidebar-item-btn:hover .fi-sidebar-item-icon {
+    color: var(--gray-500, #6b7280);
+}
+
+.mg-flyout .fi-sidebar-item.fi-active .fi-sidebar-item-btn,
+.mg-flyout .fi-sidebar-item.fi-active .fi-sidebar-item-btn .fi-sidebar-item-icon {
+    background-color: var(--primary-50, rgb(124 58 237 / 0.08));
+    color: var(--primary-600, #7c3aed);
+}
+
+/* ── Dark theme overrides ──────────────────────────────────────────────────── */
+.dark .fi-sidebar-sub-group-items.mg-flyout {
+    border-color: var(--gray-700);
+    background: var(--gray-900);
+    box-shadow:
+        0 10px 15px -3px rgb(0 0 0 / 0.45),
+        0 4px 6px -4px rgb(0 0 0 / 0.45);
+}
+
+.dark .mg-flyout .fi-sidebar-item-btn {
+    color: var(--gray-300, #cbd5e1);
+}
+
+.dark .mg-flyout .fi-sidebar-item-btn .fi-sidebar-item-icon {
+    color: var(--gray-500, #6b7280);
+}
+
+.dark .mg-flyout .fi-sidebar-item-btn:hover {
+    background-color: rgb(124 58 237 / 0.15);
+    color: #c4b5fd;
+}
+
+.dark .mg-flyout .fi-sidebar-item-btn:hover .fi-sidebar-item-icon {
+    color: #c4b5fd;
+}
+
+.dark .mg-flyout .fi-sidebar-item.fi-active .fi-sidebar-item-btn,
+.dark .mg-flyout .fi-sidebar-item.fi-active .fi-sidebar-item-btn .fi-sidebar-item-icon {
+    background-color: rgb(124 58 237 / 0.2);
+    color: #a78bfa;
+}

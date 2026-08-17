@@ -1,0 +1,45 @@
+{
+    "name": "magna-cms/blog",
+    "displayName": "Blog",
+    "description": "Create and manage blog content — posts with an Editor.js block editor, nested categories, tags, revisions, scheduling, and a delivery API for headless frontends.",
+    "version": "1.0.0",
+    "author": "Magna Team",
+    "license": "MIT",
+    "compat": {
+        "magna": "^1.0",
+        "php": "^8.3"
+    },
+    "entry": "MagnaCms\\Blog\\BlogPlugin",
+    "provides": {
+        "apiRoutes": true,
+        "adminNavigation": true
+    },
+    "permissions": [
+        "blog.posts.view",
+        "blog.posts.create",
+        "blog.posts.edit",
+        "blog.posts.edit-others",
+        "blog.posts.delete",
+        "blog.posts.publish",
+        "blog.posts.restore",
+        "blog.categories.manage",
+        "blog.tags.manage",
+        "blog.series.manage",
+        "blog.comments.manage",
+        "blog.settings.manage"
+    ],
+    "uninstall": {
+        "tables": [
+            "blog_reactions",
+            "blog_comments",
+            "blog_post_meta",
+            "blog_post_tag",
+            "blog_post_author",
+            "blog_posts",
+            "blog_series",
+            "blog_tags",
+            "blog_categories"
+        ],
+        "contentTypes": []
+    }
+}

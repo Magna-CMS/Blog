@@ -1,0 +1,825 @@
+.magna-blog-editor {
+    min-height: 260px;
+    padding: 0.75rem 1rem;
+    border: 1px solid rgb(228 228 231);
+    border-radius: 0.5rem;
+    background: #fff;
+}
+
+.dark .magna-blog-editor {
+    border-color: rgb(63 63 70);
+    background: rgb(24 24 27);
+    color: rgb(244 244 245);
+}
+
+/* Heading levels. Editor.js ships no size for headings, so H2/H3/H4 would all
+   render at the base body size — making the "Heading level" control look like it
+   does nothing (only the Style-tune font-size visibly changed things). Mirror the
+   preview scale (h2 1.7 / h3 1.35 / h4 1.12) so switching level is visible in the
+   editor too. */
+.magna-blog-editor h1,
+.magna-blog-editor h2,
+.magna-blog-editor h3,
+.magna-blog-editor h4,
+.magna-blog-editor h5,
+.magna-blog-editor h6 {
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+}
+.magna-blog-editor h1 { font-size: 2.1rem; }
+.magna-blog-editor h2 { font-size: 1.7rem; }
+.magna-blog-editor h3 { font-size: 1.35rem; }
+.magna-blog-editor h4 { font-size: 1.12rem; }
+.magna-blog-editor h5 { font-size: 1rem; }
+.magna-blog-editor h6 { font-size: 0.9rem; }
+
+/* Vertical rhythm between blocks in the editor canvas (and inside columns).
+   Editor.js' own block spacing is tiny, so consecutive blocks look glued. */
+.codex-editor__redactor > .ce-block + .ce-block { margin-top: 0.85rem; }
+
+/* ══ Paragraph templates (custom paragraph tool) ═══════════════════════════
+   Structure: .magna-blog-p[data-template=X] wraps __text (+ optional __media,
+   __label). The renderer emits the SAME markup so this file (linked into the
+   preview) styles both surfaces. Boxed templates use var(--p-bg, default) so a
+   user Background override from the Style tune wins. */
+.magna-blog-p { --p-radius: 16px; }
+.magna-blog-p__text { outline: none; }
+.magna-blog-p__text > p:first-child { margin-top: 0; } .magna-blog-p__text > p:last-child { margin-bottom: 0; }
+.magna-blog-p__media { margin: 0; }
+.magna-blog-p__media img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; display: block; min-height: 140px; }
+.magna-blog-p__placeholder {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .35rem;
+    min-height: 140px; border: 1px dashed rgb(148 163 184); border-radius: 12px; color: rgb(148 163 184);
+    font-size: .8rem; background: rgba(148 163 184 / 0.06);
+}
+
+/* Typographic templates */
+.magna-blog-p[data-template="lead"] .magna-blog-p__text,
+.magna-blog-p[data-template="hero-lead"] .magna-blog-p__text { font-size: 1.28rem; font-weight: 500; line-height: 1.7; }
+.magna-blog-p[data-template="hero-lead"] { padding-left: 1.4rem; border-left: 4px solid transparent; border-image: linear-gradient(180deg, #6366f1, #a855f7) 1; }
+.magna-blog-p[data-template="dropcap"] .magna-blog-p__text::first-letter { font-size: 3.2rem; float: left; line-height: .75; margin: .1rem .65rem 0 0; font-weight: 800; color: var(--p-accent, #4f46e5); }
+.magna-blog-p[data-template="serif-dropcap"] .magna-blog-p__text::first-letter { font-size: 4rem; float: left; line-height: .72; margin: .15rem .7rem 0 0; font-weight: 700; color: var(--p-accent, #4f46e5); font-family: Georgia, "Times New Roman", serif; }
+
+/* Quotes */
+.magna-blog-p[data-template="pullquote"] .magna-blog-p__text { border-top: 2px solid rgb(226 232 240); border-bottom: 2px solid rgb(226 232 240); padding: 1.2rem .5rem; text-align: center; font-size: 1.3rem; font-style: italic; }
+.magna-blog-p[data-template="quote-fancy"] { position: relative; background: var(--p-bg, #faf5ff); border-radius: var(--p-radius); padding: 2.4rem 1.75rem 1.6rem; text-align: center; overflow: hidden; }
+.magna-blog-p[data-template="quote-fancy"]::before { content: '\201C'; position: absolute; top: -1.2rem; left: 50%; transform: translateX(-50%); font-family: Georgia, serif; font-size: 7rem; color: rgb(233 213 255); line-height: 1; }
+.magna-blog-p[data-template="quote-fancy"] .magna-blog-p__text { font-family: Georgia, serif; font-size: 1.3rem; font-style: italic; color: #581c87; position: relative; }
+.magna-blog-p[data-template="quote-minimal"] { position: relative; background: var(--p-bg, #ffffff); padding: 1.9rem 2.2rem; border-radius: var(--p-radius); border: 1px solid rgb(226 232 240); }
+.magna-blog-p[data-template="quote-minimal"]::before { content: ''; position: absolute; top: 0; left: 2rem; width: 40px; height: 4px; background: var(--p-accent, #3b82f6); border-radius: 0 0 4px 4px; }
+.magna-blog-p[data-template="quote-minimal"] .magna-blog-p__text { font-family: Georgia, serif; font-size: 1.2rem; font-style: italic; color: rgb(30 41 59); }
+.magna-blog-p[data-template="quote-strip"] { background: var(--p-bg, #0284c7); color: #fff; padding: 1.6rem; border-radius: var(--p-radius); text-align: center; }
+.magna-blog-p[data-template="quote-strip"] .magna-blog-p__text { font-size: 1.15rem; font-weight: 500; }
+
+/* Callouts / notices */
+.magna-blog-p[data-template="callout"] { background: var(--p-bg, #eff6ff); border-left: 4px solid var(--p-accent, #3182ce); padding: 1rem 1.3rem; border-radius: 0 12px 12px 0; color: #2b6cb0; }
+.magna-blog-p[data-template="warning"] { background: var(--p-bg, #fffbeb); border-left: 4px solid var(--p-accent, #f59e0b); padding: 1rem 1.3rem 1rem 3rem; border-radius: 0 12px 12px 0; color: #78350f; position: relative; }
+.magna-blog-p[data-template="warning"]::before { content: '\26A0'; position: absolute; left: 1.1rem; top: .95rem; color: var(--p-accent, #f59e0b); font-weight: 800; }
+.magna-blog-p[data-template="takeaway"], .magna-blog-p[data-template="insight"] { background: var(--p-bg, #f7fafc); border: 1px solid rgb(226 232 240); border-radius: var(--p-radius); padding: 1.4rem 1.6rem; display: flex; flex-direction: column; }
+.magna-blog-p[data-template="insight"] { background: var(--p-bg, #f0fdf4); border-color: #bbf7d0; color: #14532d; }
+/* Editable badge (the __label span), not hardcoded text. */
+.magna-blog-p[data-template="takeaway"] .magna-blog-p__label, .magna-blog-p[data-template="insight"] .magna-blog-p__label {
+    display: inline-block; order: -1; align-self: flex-start; background: var(--p-accent, #319795); color: #fff; font-size: .68rem;
+    font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: .22rem .6rem; border-radius: 999px; margin-bottom: .6rem; outline: none; }
+.magna-blog-p[data-template="insight"] .magna-blog-p__label { background: var(--p-accent, #22c55e); }
+
+/* Light-background templates carry dark text so they read on both the dark
+   editor and the light preview (their own bg is light in both). */
+.magna-blog-p[data-template="card"], .magna-blog-p[data-template="glass"],
+.magna-blog-p[data-template="pill"], .magna-blog-p[data-template="stat"],
+.magna-blog-p[data-template="timeline"], .magna-blog-p[data-template="split-line"],
+.magna-blog-p[data-template="border-left"], .magna-blog-p[data-template="asymmetric"],
+.magna-blog-p[data-template="takeaway"], .magna-blog-p[data-template="quote-minimal"] { color: #334155; }
+
+/* Cards / surfaces */
+.magna-blog-p[data-template="card"] { background: var(--p-bg, #fff); padding: 1.75rem; border-radius: var(--p-radius); border: 1px solid rgb(241 245 249); box-shadow: 0 6px 18px rgba(0,0,0,.06); }
+.magna-blog-p[data-template="glass"] { background: var(--p-bg, rgba(255,255,255,.8)); backdrop-filter: blur(12px); border: 1px solid rgba(226,232,240,.8); border-radius: var(--p-radius); padding: 1.9rem; box-shadow: 0 10px 30px -10px rgba(0,0,0,.08); }
+.magna-blog-p[data-template="pastel"] { background: var(--p-bg, #f3e8ff); border-radius: var(--p-radius); padding: 1.7rem; color: #581c87; }
+.magna-blog-p[data-template="retro"] { background: var(--p-bg, #fef3c7); border: 2px solid #78350f; border-radius: 8px; padding: 1.6rem; box-shadow: 4px 4px 0 #78350f; }
+.magna-blog-p[data-template="retro"] .magna-blog-p__text { font-family: Georgia, serif; color: #451a03; font-size: 1.08rem; }
+.magna-blog-p[data-template="border-left"] { background: var(--p-bg, #fff); border-left: 6px solid var(--p-accent, #10b981); padding: 1.4rem 1.6rem; border-radius: 0 12px 12px 0; }
+.magna-blog-p[data-template="pill"] { background: var(--p-bg, #fff); border-radius: 999px; padding: 1.2rem 2.2rem; box-shadow: 0 10px 25px -8px rgba(0,0,0,.18); text-align: center; }
+.magna-blog-p[data-template="conclusion"] { background: var(--p-bg, linear-gradient(180deg,#1e293b,#0f172a)); border: 1px solid rgb(51 65 85); border-radius: 20px; padding: 2rem; text-align: center; color: #94a3b8; }
+
+/* Dark / techy */
+.magna-blog-p[data-template="dark"] { background: var(--p-bg, #0f172a); border-radius: var(--p-radius); padding: 1.9rem; color: #94a3b8; box-shadow: 0 10px 25px -8px rgba(15,23,42,.3); }
+.magna-blog-p[data-template="neon"] { background: var(--p-bg, #1e293b); border: 1px solid var(--p-accent, #6366f1); border-radius: var(--p-radius); padding: 1.9rem; color: #cbd5e1; box-shadow: 0 0 24px rgba(99,102,241,.28); }
+.magna-blog-p[data-template="dark-glass"] { background: var(--p-bg, rgba(30,41,59,.7)); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,.1); border-radius: var(--p-radius); padding: 1.9rem; color: #e2e8f0; }
+.magna-blog-p[data-template="gradient-border"] { background: linear-gradient(135deg,#f43f5e,#8b5cf6,#06b6d4); border-radius: var(--p-radius); padding: 2px; }
+.magna-blog-p[data-template="gradient-border"] .magna-blog-p__text { background: var(--p-bg, #1e293b); border-radius: 14px; padding: 1.6rem; color: #cbd5e1; }
+.magna-blog-p[data-template="terminal"] { background: var(--p-bg, #020617); border: 1px solid #1e293b; border-radius: 12px; padding-top: 2.1rem; position: relative; overflow: hidden; }
+.magna-blog-p[data-template="terminal"]::before { content: ''; position: absolute; top: .8rem; left: 1rem; width: 10px; height: 10px; border-radius: 50%; background: #ef4444; box-shadow: 16px 0 0 #f59e0b, 32px 0 0 #10b981; }
+.magna-blog-p[data-template="terminal"] .magna-blog-p__text { font-family: ui-monospace, "Fira Code", monospace; color: var(--p-accent, #38bdf8); font-size: .92rem; padding: 0 1.4rem 1.4rem; }
+
+/* Labelled templates (ribbon / badge / timeline / stat / asymmetric) */
+.magna-blog-p__label { display: none; }
+.magna-blog-p[data-template="ribbon"], .magna-blog-p[data-template="badge"] { background: var(--p-bg, #1e293b); border-radius: var(--p-radius); padding: 1.7rem; position: relative; overflow: hidden; color: #f1f5f9; }
+.magna-blog-p[data-template="badge"] { display: flex; flex-direction: column; }
+.magna-blog-p[data-template="badge"] .magna-blog-p__label { display: inline-block; order: -1; align-self: flex-start; background: var(--p-accent, #38bdf8); color: #0f172a; font-size: .7rem; font-weight: 800; text-transform: uppercase; padding: .2rem .6rem; border-radius: 4px; margin-bottom: .7rem; }
+.magna-blog-p[data-template="ribbon"] .magna-blog-p__label { display: block; position: absolute; top: 16px; right: -34px; background: var(--p-accent, #f43f5e); color: #fff; font-size: .62rem; font-weight: 700; text-transform: uppercase; padding: .25rem 2.5rem; transform: rotate(45deg); }
+.magna-blog-p[data-template="timeline"] { background: var(--p-bg, #fff); border-radius: var(--p-radius); padding: 1.4rem 1.5rem 1.4rem 3.6rem; position: relative; }
+.magna-blog-p[data-template="timeline"] .magna-blog-p__label { display: flex; align-items: center; justify-content: center; position: absolute; left: 1rem; top: 1.4rem; width: 28px; height: 28px; background: var(--p-accent, #0284c7); color: #fff; border-radius: 50%; font-weight: 700; font-size: .85rem; }
+.magna-blog-p[data-template="stat"] { background: var(--p-bg, #fff); border-radius: var(--p-radius); padding: 1.7rem; display: grid; grid-template-columns: 110px 1fr; gap: 1.4rem; align-items: center; }
+.magna-blog-p[data-template="stat"] .magna-blog-p__label { display: block; order: -1; font-size: 2.6rem; font-weight: 800; color: var(--p-accent, #ec4899); line-height: 1; text-align: center; }
+.magna-blog-p[data-template="asymmetric"] { background: var(--p-bg, #fff); border-radius: var(--p-radius); overflow: hidden; display: grid; grid-template-columns: 140px 1fr; }
+.magna-blog-p[data-template="asymmetric"] .magna-blog-p__label { display: flex; align-items: center; justify-content: center; order: -1; background: var(--p-accent, linear-gradient(135deg,#06b6d4,#3b82f6)); color: #fff; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; font-size: .85rem; text-align: center; padding: 1rem; }
+.magna-blog-p[data-template="asymmetric"] .magna-blog-p__text, .magna-blog-p[data-template="stat"] .magna-blog-p__text { padding: 0; }
+.magna-blog-p[data-template="asymmetric"] .magna-blog-p__text { padding: 1.6rem; }
+
+/* Columns */
+.magna-blog-p[data-template="twocol"] .magna-blog-p__text { column-count: 2; column-gap: 1.75rem; }
+.magna-blog-p[data-template="split-line"] { background: var(--p-bg, #fff); border-radius: var(--p-radius); padding: 1.7rem; }
+.magna-blog-p[data-template="split-line"] .magna-blog-p__text { column-count: 2; column-gap: 2rem; column-rule: 1px solid rgb(226 232 240); }
+
+/* Image templates */
+.magna-blog-p[data-template="image-left"], .magna-blog-p[data-template="image-right"] { display: grid; gap: 1.5rem; align-items: center; background: var(--p-bg, transparent); border-radius: var(--p-radius); }
+.magna-blog-p[data-template="image-left"] { grid-template-columns: 230px 1fr; }
+.magna-blog-p[data-template="image-right"] { grid-template-columns: 1fr 230px; }
+.magna-blog-p[data-template="image-left"] .magna-blog-p__media { order: -1; }
+.magna-blog-p[data-template="photo-overlay"] { position: relative; border-radius: var(--p-radius); overflow: hidden; min-height: 200px; display: flex; align-items: flex-end; }
+.magna-blog-p[data-template="photo-overlay"] .magna-blog-p__media { position: absolute; inset: 0; margin: 0; }
+.magna-blog-p[data-template="photo-overlay"] .magna-blog-p__media img { height: 100%; border-radius: 0; }
+.magna-blog-p[data-template="photo-overlay"] .magna-blog-p__text { position: relative; z-index: 1; color: #fff; padding: 2rem; width: 100%; background: linear-gradient(0deg, rgba(15,23,42,.95), rgba(15,23,42,.15)); }
+.magna-blog-p[data-template="author-note"] { background: var(--p-bg, #1e293b); border-radius: var(--p-radius); padding: 1.5rem; display: flex; gap: 1.2rem; align-items: center; color: #cbd5e1; }
+.magna-blog-p[data-template="author-note"] .magna-blog-p__media { order: -1; flex-shrink: 0; }
+.magna-blog-p[data-template="author-note"] .magna-blog-p__media img { width: 54px; height: 54px; border-radius: 50%; min-height: 0; border: 2px solid var(--p-accent, #38bdf8); }
+
+@media (max-width: 640px) {
+    .magna-blog-p[data-template="image-left"], .magna-blog-p[data-template="image-right"],
+    .magna-blog-p[data-template="stat"], .magna-blog-p[data-template="asymmetric"] { grid-template-columns: 1fr; }
+    .magna-blog-p[data-template="twocol"] .magna-blog-p__text, .magna-blog-p[data-template="split-line"] .magna-blog-p__text { column-count: 1; }
+}
+
+/* Block Style tune: wrapper carries inline align/colour/size; the ⋮ popover
+   shows only a hint pointing users to the sidebar Block tab. */
+.magna-blog-styled { transition: color .1s ease; }
+/* Table presentation flags carried on the style-tune wrapper. */
+.magna-blog-styled.is-striped .tc-row:nth-child(even) { background: rgba(148 163 184 / 0.10); }
+.magna-blog-styled.is-bordered .tc-table, .magna-blog-styled.is-bordered .tc-cell { border-color: rgb(148 163 184); }
+.magna-blog-styled.is-compact .tc-cell { padding: 2px 8px; }
+.magna-blog-styled.is-vtop .ce-editorjsColumns_wrapper { align-items: start; }
+.magna-blog-styled.is-vcenter .ce-editorjsColumns_wrapper { align-items: center; }
+.magna-blog-styled.ratio-2-1 .ce-editorjsColumns_wrapper { grid-template-columns: 2fr 1fr; }
+.magna-blog-styled.ratio-1-2 .ce-editorjsColumns_wrapper { grid-template-columns: 1fr 2fr; }
+.magna-blog-styled.ratio-3-1 .ce-editorjsColumns_wrapper { grid-template-columns: 3fr 1fr; }
+.magna-blog-styled.ratio-1-3 .ce-editorjsColumns_wrapper { grid-template-columns: 1fr 3fr; }
+
+.magna-blog-code { margin: 0.4rem 0; position: relative; }
+.magna-blog-code__lang {
+    position: absolute; top: 0.4rem; right: 0.5rem; z-index: 1;
+    font-size: 0.68rem; font-weight: 600; letter-spacing: 0.02em; color: rgb(148 163 184);
+    background: rgba(148 163 184 / 0.15); padding: 0.1rem 0.45rem; border-radius: 5px;
+    pointer-events: none; text-transform: none;
+}
+.magna-blog-code__ta {
+    width: 100%; box-sizing: border-box; border: 1px solid rgb(212 212 216); border-radius: 0.5rem;
+    background: rgb(15 23 42); color: rgb(226 232 240); padding: 0.75rem 0.9rem;
+    font-family: ui-monospace, "JetBrains Mono", Consolas, monospace; font-size: 0.86rem; line-height: 1.5;
+    resize: vertical; tab-size: 2;
+}
+.magna-blog-code__ta:focus { outline: none; border-color: rgb(99 102 241); }
+.magna-blog-tune-hint {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+    color: rgb(113 113 122);
+    max-width: 190px;
+    line-height: 1.35;
+}
+
+.magna-blog-image__img {
+    max-width: 100%;
+    border-radius: 0.5rem;
+    display: block;
+    margin: 0 auto;
+}
+
+.magna-blog-image__caption {
+    text-align: center;
+    font-size: 0.875rem;
+    color: rgb(113 113 122);
+    margin-top: 0.5rem;
+    outline: none;
+}
+
+.magna-blog-image__button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.875rem;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgb(63 63 70);
+    background: rgb(244 244 245);
+    border-radius: 0.5rem;
+    cursor: pointer;
+}
+
+/* Empty editable placeholder for custom blocks */
+[data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: rgb(161 161 170);
+    pointer-events: none;
+}
+
+.magna-blog-pre,
+.magna-blog-verse {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    white-space: pre-wrap;
+    background: rgb(244 244 245);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    outline: none;
+    font-size: 0.9rem;
+}
+.magna-blog-verse {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-style: italic;
+    background: transparent;
+    padding: 0.25rem 0;
+}
+
+.magna-blog-spacer {
+    display: flex; align-items: center; justify-content: center;
+    border: 1px dashed rgb(212 212 216); border-radius: 0.5rem; background: rgba(148 163 184 / 0.06);
+    box-sizing: border-box;
+}
+.magna-blog-spacer.has-divider { border-style: solid; border-color: transparent; border-top: 1px solid rgb(203 213 225); }
+.magna-blog-spacer__label { font-size: 0.72rem; color: rgb(148 163 184); letter-spacing: 0.02em; }
+.dark .magna-blog-spacer { border-color: rgb(63 63 70); }
+
+.magna-blog-marker {
+    text-align: center;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: rgb(113 113 122);
+    border: 1px dashed rgb(212 212 216);
+    border-radius: 0.5rem;
+    padding: 0.4rem;
+    user-select: none;
+}
+
+.magna-blog-pullquote {
+    border-left: 4px solid rgb(99 102 241);
+    padding: 0.5rem 0 0.5rem 1.25rem;
+    margin: 0;
+}
+.magna-blog-pullquote__text {
+    font-size: 1.35rem;
+    font-weight: 600;
+    line-height: 1.4;
+    outline: none;
+}
+.magna-blog-pullquote__cite {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: rgb(113 113 122);
+    outline: none;
+}
+
+.magna-blog-callout {
+    border-radius: 0.6rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid;
+    display: flex; gap: 0.7rem; align-items: flex-start;
+}
+.magna-blog-callout[data-type="info"] { background: rgb(239 246 255); border-color: rgb(191 219 254); color: rgb(30 58 138); }
+.magna-blog-callout[data-type="success"] { background: rgb(240 253 244); border-color: rgb(187 247 208); color: rgb(20 83 45); }
+.magna-blog-callout[data-type="warning"] { background: rgb(255 251 235); border-color: rgb(253 230 138); color: rgb(120 53 15); }
+.magna-blog-callout[data-type="danger"] { background: rgb(254 242 242); border-color: rgb(254 202 202); color: rgb(127 29 29); }
+.magna-blog-callout__icon {
+    flex-shrink: 0; width: 1.4rem; height: 1.4rem; border-radius: 50%; display: grid; place-items: center;
+    font-size: 0.85rem; font-weight: 700; background: rgba(0 0 0 / 0.06); line-height: 1;
+}
+.magna-blog-callout__body { flex: 1; min-width: 0; }
+.magna-blog-callout__title { font-weight: 700; outline: none; }
+.magna-blog-callout__text { outline: none; }
+
+.magna-blog-cta {
+    text-align: center;
+    background: rgb(249 250 251);
+    border: 1px solid rgb(228 228 231);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+}
+.magna-blog-cta__title { font-size: 1.25rem; font-weight: 700; outline: none; }
+.magna-blog-cta__text { color: rgb(82 82 91); margin: 0.35rem 0 0.75rem; outline: none; }
+.magna-blog-cta__controls { display: flex; gap: 0.5rem; justify-content: center; }
+.magna-blog-cta__input {
+    padding: 0.4rem 0.6rem; border: 1px solid rgb(212 212 216); border-radius: 0.4rem; font-size: 0.85rem;
+}
+
+/* Buttons block — WYSIWYG. Real styled buttons; styling edited in the sidebar. */
+.magna-blog-buttons__list { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.magna-blog-btn {
+    position: relative; display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 600; line-height: 1.2; text-decoration: none; cursor: pointer;
+    border: 1.5px solid transparent; transition: box-shadow .12s, outline .12s;
+}
+.magna-blog-btn__label { outline: none; min-width: 1ch; }
+.magna-blog-btn__remove {
+    position: absolute; top: -8px; right: -8px; width: 18px; height: 18px; border: 0; border-radius: 50%;
+    background: rgb(220 38 38); color: #fff; cursor: pointer; font-size: 0.8rem; line-height: 1;
+    display: none; align-items: center; justify-content: center; padding: 0;
+}
+.magna-blog-btn:hover .magna-blog-btn__remove,
+.magna-blog-btn.is-active .magna-blog-btn__remove { display: flex; }
+.magna-blog-add {
+    font-size: 0.8rem; font-weight: 500; color: rgb(99 102 241);
+    background: transparent; border: 1px dashed rgb(199 210 254); border-radius: 0.5rem;
+    padding: 0.35rem 0.7rem; cursor: pointer; margin-top: 0.6rem;
+}
+.magna-blog-remove {
+    border: 0; background: transparent; color: rgb(220 38 38); cursor: pointer; font-size: 0.9rem;
+}
+
+/* ── FAQ templates ────────────────────────────────────────────────────────
+   Two surfaces share these rules: the editor (.magna-blog-faq[data-template]
+   with __item / __head / __q / __marker / __a) and the rendered preview &
+   frontend (.faq[data-template] with <details><summary> + <div>). A template
+   only restyles the accordion chrome — questions and answers stay editable in
+   every one. Markers are pure CSS (no icon font). */
+.magna-blog-faq__head { display: flex; align-items: center; gap: 0.6rem; }
+.magna-blog-faq__q { font-weight: 600; outline: none; flex: 1; }
+.magna-blog-faq__a { color: var(--p-text, rgb(82 82 91)); margin-top: 0.5rem; outline: none; }
+.magna-blog-faq__q { color: var(--p-text, inherit); }
+.magna-blog-faq__marker {
+    width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+    transform: rotate(45deg); opacity: 0.45; flex-shrink: 0;
+}
+.magna-blog-faq__item { border: 1px solid rgb(228 228 231); border-radius: 0.6rem; padding: 0.7rem 0.9rem; margin-bottom: 0.5rem; }
+
+.faq[data-template] summary { display: flex; align-items: center; gap: 0.6rem; list-style: none; }
+.faq[data-template] summary::-webkit-details-marker { display: none; }
+.faq[data-template] summary::after {
+    content: ''; width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+    transform: rotate(45deg); opacity: 0.45; margin-left: auto; flex-shrink: 0; transition: transform 0.3s ease;
+}
+.faq[data-template] details[open] summary::after { transform: rotate(-135deg); }
+.faq[data-template] details > div { margin-top: 0.6rem; }
+
+/* 1. Floating card (default) */
+.magna-blog-faq[data-template="card"] .magna-blog-faq__item,
+.faq[data-template="card"] details { background: #ffffff; border: 1px solid rgb(226 232 240); border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,.05); }
+
+/* 2. Line separator */
+.magna-blog-faq[data-template="line"] .magna-blog-faq__item,
+.faq[data-template="line"] details { background: transparent; border: 0; border-bottom: 1px solid rgb(226 232 240); border-radius: 0; padding: 0.9rem 0.2rem; box-shadow: none; }
+.magna-blog-faq[data-template="line"] .magna-blog-faq__marker,
+.faq[data-template="line"] summary::after { transform: rotate(45deg); border-color: #ec4899; }
+.faq[data-template="line"] details[open] summary::after { transform: rotate(-135deg); }
+
+/* 3. Left accent */
+.magna-blog-faq[data-template="accent"] .magna-blog-faq__item,
+.faq[data-template="accent"] details { background: #f8fafc; border: 1px solid rgb(226 232 240); border-left: 4px solid #10b981; border-radius: 0 10px 10px 0; }
+
+/* 4. Neon glow */
+.magna-blog-faq[data-template="neon"] .magna-blog-faq__item,
+.faq[data-template="neon"] details { background: #1e293b; border: 1px solid rgba(99,102,241,.4); border-radius: 12px; box-shadow: 0 0 18px rgba(99,102,241,.28); }
+.magna-blog-faq[data-template="neon"] .magna-blog-faq__head, .magna-blog-faq[data-template="neon"] .magna-blog-faq__a,
+.faq[data-template="neon"] summary, .faq[data-template="neon"] details > div { color: var(--p-text, #cbd5e1); }
+.faq[data-template="neon"] details[open] { border-color: #a855f7; box-shadow: 0 0 20px rgba(168,85,247,.32); }
+
+/* 5. Numbered steps */
+.magna-blog-faq[data-template="numbered"] .magna-blog-faq__list { counter-reset: faq; }
+.magna-blog-faq[data-template="numbered"] .magna-blog-faq__item { counter-increment: faq; background: #f8fafc; border: 1px solid rgb(226 232 240); border-radius: 10px; }
+.faq[data-template="numbered"] { counter-reset: faq; }
+.faq[data-template="numbered"] details { counter-increment: faq; background: #f8fafc; }
+.magna-blog-faq[data-template="numbered"] .magna-blog-faq__head::before,
+.faq[data-template="numbered"] summary::before { content: counter(faq); font-weight: 800; color: #6366f1; font-size: 1.05rem; flex-shrink: 0; }
+
+/* 6. Icon badge */
+.magna-blog-faq[data-template="badge"] .magna-blog-faq__item,
+.faq[data-template="badge"] details { background: #ffffff; border: 1px solid rgb(226 232 240); border-radius: 12px; }
+.magna-blog-faq[data-template="badge"] .magna-blog-faq__head::before,
+.faq[data-template="badge"] summary::before { content: '?'; display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 8px; background: rgba(99,102,241,.15); color: #6366f1; font-weight: 800; font-size: .85rem; flex-shrink: 0; }
+
+/* 7. Glassmorphism */
+.magna-blog-faq[data-template="glass"] .magna-blog-faq__item,
+.faq[data-template="glass"] details { background: rgba(255,255,255,.6); backdrop-filter: blur(10px); border: 1px solid rgba(226,232,240,.8); border-radius: 12px; box-shadow: 0 8px 24px -12px rgba(0,0,0,.1); }
+
+/* 8. Metadata header */
+.magna-blog-faq[data-template="meta"] .magna-blog-faq__item,
+.faq[data-template="meta"] details { background: #ffffff; border: 1px solid rgb(226 232 240); border-top: 3px solid #6366f1; border-radius: 4px 4px 10px 10px; }
+
+/* 9. Gradient header */
+.magna-blog-faq[data-template="gradient"] .magna-blog-faq__item,
+.faq[data-template="gradient"] details { border: 1px solid rgb(226 232 240); border-radius: 12px; overflow: hidden; padding: 0; }
+.magna-blog-faq[data-template="gradient"] .magna-blog-faq__head,
+.faq[data-template="gradient"] summary { background: linear-gradient(135deg,#1e1b4b,#311b92); color: var(--p-text, #fff); padding: 0.8rem 1rem; }
+.magna-blog-faq[data-template="gradient"] .magna-blog-faq__q { color: var(--p-text, #fff); }
+.magna-blog-faq[data-template="gradient"] .magna-blog-faq__a,
+.faq[data-template="gradient"] details > div { margin-top: 0; padding: 0.8rem 1rem; }
+
+/* 10. Soft pill */
+.magna-blog-faq[data-template="pill"] .magna-blog-faq__item,
+.faq[data-template="pill"] details { background: #ffffff; border: 1px solid rgb(226 232 240); border-radius: 20px; padding: 0.85rem 1.2rem; box-shadow: 0 6px 16px -8px rgba(0,0,0,.15); }
+.magna-blog-faq[data-template="pill"] .magna-blog-faq__marker,
+.faq[data-template="pill"] summary::after { width: 11px; height: 11px; border: 0; border-radius: 50%; background: #cbd5e1; transform: none; opacity: 1; }
+.faq[data-template="pill"] details[open] summary::after { transform: none; background: #3b82f6; }
+
+/* 11. Elevation pop */
+.magna-blog-faq[data-template="elevate"] .magna-blog-faq__item,
+.faq[data-template="elevate"] details { background: #ffffff; border: 1px solid rgb(226 232 240); border-radius: 10px; transition: transform .2s ease, box-shadow .2s ease; }
+.faq[data-template="elevate"] details[open] { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,.12); }
+
+/* 12. Bold frame */
+.magna-blog-faq[data-template="frame"] .magna-blog-faq__item,
+.faq[data-template="frame"] details { background: transparent; border: 2px solid rgb(226 232 240); border-radius: 8px; box-shadow: none; }
+.faq[data-template="frame"] details[open] { border-color: #f59e0b; }
+
+/* 13. Terminal */
+.magna-blog-faq[data-template="terminal"] .magna-blog-faq__item,
+.faq[data-template="terminal"] details { background: #020617; border: 1px solid #0284c7; border-radius: 4px; font-family: ui-monospace, "Fira Code", monospace; }
+.magna-blog-faq[data-template="terminal"] .magna-blog-faq__head,
+.faq[data-template="terminal"] summary { color: var(--p-text, #38bdf8); }
+.magna-blog-faq[data-template="terminal"] .magna-blog-faq__a,
+.faq[data-template="terminal"] details > div { color: var(--p-text, #7dd3fc); }
+
+/* 14. Status tag */
+.magna-blog-faq[data-template="status"] .magna-blog-faq__item,
+.faq[data-template="status"] details { background: #ffffff; border: 1px solid rgb(226 232 240); border-radius: 10px; }
+.magna-blog-faq[data-template="status"] .magna-blog-faq__head::before,
+.faq[data-template="status"] summary::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
+
+/* 15. Full-width strip */
+.magna-blog-faq[data-template="strip"] .magna-blog-faq__item,
+.faq[data-template="strip"] details { background: transparent; border: 0; border-bottom: 2px solid rgb(226 232 240); border-radius: 0; padding: 1rem 0; box-shadow: none; }
+.magna-blog-faq[data-template="strip"] .magna-blog-faq__q,
+.faq[data-template="strip"] summary { font-size: 1.05rem; font-weight: 700; }
+
+/* 16. Compact box */
+.magna-blog-faq[data-template="compact"] .magna-blog-faq__item,
+.faq[data-template="compact"] details { background: #18181b; border: 0; border-radius: 8px; padding: 0.5rem 0.7rem; margin-bottom: 0.35rem; font-size: 0.9rem; }
+.magna-blog-faq[data-template="compact"] .magna-blog-faq__head, .magna-blog-faq[data-template="compact"] .magna-blog-faq__a,
+.faq[data-template="compact"] summary, .faq[data-template="compact"] details > div { color: var(--p-text, #e4e4e7); }
+
+/* 17. Category tag */
+.magna-blog-faq[data-template="tag"] .magna-blog-faq__item,
+.faq[data-template="tag"] details { background: #ffffff; border: 1px solid rgb(226 232 240); border-radius: 12px; }
+.magna-blog-faq[data-template="tag"] .magna-blog-faq__marker,
+.faq[data-template="tag"] summary::after { width: 16px; height: 8px; border: 0; border-radius: 4px; background: #a5b4fc; transform: none; opacity: 1; }
+.faq[data-template="tag"] details[open] summary::after { transform: none; background: #6366f1; }
+
+/* 18. Light contrast */
+.magna-blog-faq[data-template="light"] .magna-blog-faq__item,
+.faq[data-template="light"] details { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; }
+.magna-blog-faq[data-template="light"] .magna-blog-faq__q,
+.faq[data-template="light"] summary { color: var(--p-text, #0f172a); }
+.magna-blog-faq[data-template="light"] .magna-blog-faq__a,
+.faq[data-template="light"] details > div { color: var(--p-text, #475569); }
+
+/* 19. Bracket line */
+.magna-blog-faq[data-template="bracket"] .magna-blog-faq__item,
+.faq[data-template="bracket"] details { background: transparent; border: 0; border-left: 2px solid rgb(226 232 240); border-radius: 0; padding: 0.5rem 0 0.5rem 1rem; box-shadow: none; }
+.faq[data-template="bracket"] details[open] { border-left-color: #6366f1; }
+
+/* 20. Plus / minus */
+.magna-blog-faq[data-template="plusminus"] .magna-blog-faq__item,
+.faq[data-template="plusminus"] details { background: #ffffff; border: 1px solid rgb(226 232 240); border-radius: 12px; }
+.magna-blog-faq[data-template="plusminus"] .magna-blog-faq__marker,
+.faq[data-template="plusminus"] summary::after {
+    width: 12px; height: 12px; border: 0; transform: none; opacity: 0.7;
+    background-image: linear-gradient(currentColor,currentColor), linear-gradient(currentColor,currentColor);
+    background-size: 12px 2px, 2px 12px; background-position: center; background-repeat: no-repeat;
+}
+.faq[data-template="plusminus"] details[open] summary::after { background-size: 12px 2px, 0 0; }
+
+/* Light-surface FAQ templates carry dark text so they stay readable in the dark
+   editor and dark-theme preview (their own background is light in both themes).
+   Without this, question/answer text inherits the page's light var(--text) and
+   vanishes on the white card. */
+.magna-blog-faq[data-template="card"] .magna-blog-faq__head, .magna-blog-faq[data-template="card"] .magna-blog-faq__a,
+.magna-blog-faq[data-template="accent"] .magna-blog-faq__head, .magna-blog-faq[data-template="accent"] .magna-blog-faq__a,
+.magna-blog-faq[data-template="numbered"] .magna-blog-faq__head, .magna-blog-faq[data-template="numbered"] .magna-blog-faq__a,
+.magna-blog-faq[data-template="badge"] .magna-blog-faq__head, .magna-blog-faq[data-template="badge"] .magna-blog-faq__a,
+.magna-blog-faq[data-template="meta"] .magna-blog-faq__head, .magna-blog-faq[data-template="meta"] .magna-blog-faq__a,
+.magna-blog-faq[data-template="glass"] .magna-blog-faq__head, .magna-blog-faq[data-template="glass"] .magna-blog-faq__a,
+.magna-blog-faq[data-template="pill"] .magna-blog-faq__head, .magna-blog-faq[data-template="pill"] .magna-blog-faq__a,
+.magna-blog-faq[data-template="elevate"] .magna-blog-faq__head, .magna-blog-faq[data-template="elevate"] .magna-blog-faq__a,
+.magna-blog-faq[data-template="status"] .magna-blog-faq__head, .magna-blog-faq[data-template="status"] .magna-blog-faq__a,
+.magna-blog-faq[data-template="tag"] .magna-blog-faq__head, .magna-blog-faq[data-template="tag"] .magna-blog-faq__a,
+.magna-blog-faq[data-template="plusminus"] .magna-blog-faq__head, .magna-blog-faq[data-template="plusminus"] .magna-blog-faq__a,
+.faq[data-template="card"] summary, .faq[data-template="card"] details > div,
+.faq[data-template="accent"] summary, .faq[data-template="accent"] details > div,
+.faq[data-template="numbered"] summary, .faq[data-template="numbered"] details > div,
+.faq[data-template="badge"] summary, .faq[data-template="badge"] details > div,
+.faq[data-template="meta"] summary, .faq[data-template="meta"] details > div,
+.faq[data-template="glass"] summary, .faq[data-template="glass"] details > div,
+.faq[data-template="pill"] summary, .faq[data-template="pill"] details > div,
+.faq[data-template="elevate"] summary, .faq[data-template="elevate"] details > div,
+.faq[data-template="status"] summary, .faq[data-template="status"] details > div,
+.faq[data-template="tag"] summary, .faq[data-template="tag"] details > div,
+.faq[data-template="plusminus"] summary, .faq[data-template="plusminus"] details > div { color: var(--p-text, #334155); }
+
+/* Gradient header sits on a dark gradient — force light text on the summary in
+   both themes (its body stays transparent and follows the page). */
+.magna-blog-faq[data-template="gradient"] .magna-blog-faq__head,
+.faq[data-template="gradient"] summary { color: var(--p-text, #ffffff); }
+
+.magna-blog-gallery__grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.5rem;
+}
+.magna-blog-gallery__cell { position: relative; aspect-ratio: 1; border-radius: 0.5rem; overflow: hidden; background: rgb(244 244 245); }
+.magna-blog-gallery__cell img { width: 100%; height: 100%; object-fit: cover; }
+.magna-blog-gallery__remove {
+    position: absolute; top: 0.25rem; right: 0.25rem; width: 22px; height: 22px; border: 0;
+    border-radius: 5px; background: rgba(0 0 0 / 0.6); color: #fff; cursor: pointer; font-size: 1rem; line-height: 1;
+}
+
+.magna-blog-cover {
+    position: relative; min-height: 220px; border-radius: 0.75rem; overflow: hidden;
+    background-size: cover; background-position: center; background-color: rgb(39 39 42);
+    display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+    padding: 2rem; gap: 0.5rem;
+}
+.magna-blog-cover.has-image::before {
+    content: ''; position: absolute; inset: 0; background: rgba(0 0 0 / var(--cover-overlay, 0.4));
+}
+.magna-blog-cover > * { position: relative; z-index: 1; }
+.magna-blog-cover__title { font-size: 1.6rem; font-weight: 800; color: #fff; outline: none; }
+.magna-blog-cover__text { color: rgb(244 244 245); outline: none; }
+.magna-blog-cover__pick {
+    padding: 0.4rem 0.8rem; border-radius: 0.5rem; border: 1px solid rgba(255 255 255 / 0.6);
+    background: rgba(0 0 0 / 0.35); color: #fff; font-size: 0.8rem; cursor: pointer;
+}
+
+.magna-blog-dynamic {
+    display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+    padding: 0.7rem 1rem; border: 1px dashed rgb(199 210 254); border-radius: 0.6rem;
+    background: rgb(238 242 255); color: rgb(67 56 202); font-size: 0.82rem; font-weight: 500;
+}
+.magna-blog-dynamic select,
+.magna-blog-dynamic input { padding: 0.25rem 0.4rem; border: 1px solid rgb(199 210 254); border-radius: 0.35rem; font-size: 0.8rem; }
+.dark .magna-blog-dynamic { background: rgba(99 102 241 / 0.12); border-color: rgb(67 56 202); color: rgb(165 180 252); }
+.magna-blog-delimiter { text-align: center; color: rgb(148 163 184); letter-spacing: 0.5rem; padding: 0.6rem 0; font-size: 1.1rem; }
+.magna-blog-delimiter[data-style="line"] { letter-spacing: 0; border-top: 1px solid rgb(203 213 225); height: 0; padding: 0; margin: 1.2rem 0; }
+.magna-blog-delimiter[data-style="dashed"] { letter-spacing: 0; border-top: 2px dashed rgb(203 213 225); height: 0; padding: 0; margin: 1.2rem 0; }
+.magna-blog-toc__title { font-weight: 700; font-size: 0.95rem; outline: none; }
+.magna-blog-dynamic__note { opacity: 0.75; }
+
+.magna-blog-media { display: flex; flex-direction: column; gap: 0.4rem; }
+.magna-blog-media__url,
+.magna-blog-media__caption {
+    padding: 0.5rem 0.7rem; border: 1px solid rgb(212 212 216); border-radius: 0.5rem; font-size: 0.85rem;
+}
+
+/* ── Columns (editorjs-columns) — visible boxes, clear affordances, dark-safe ── */
+.ce-editorjsColumns_wrapper {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 0.75rem;
+    align-items: stretch;
+}
+.ce-editorjsColumns_col {
+    position: relative;
+    border: 1px solid rgb(212 212 216);
+    border-radius: 0.6rem;
+    background: rgb(250 250 250);
+    padding: 0.5rem 0.65rem;
+    min-height: 96px;
+    transition: border-color .15s, background .15s;
+}
+.ce-editorjsColumns_col:hover { border-color: rgb(165 180 252); }
+.ce-editorjsColumns_col:focus-within { border-color: rgb(99 102 241); background: #fff; }
+/* Empty-column hint */
+.ce-editorjsColumns_col:not(:has(.ce-block))::before {
+    content: '+ Add a block';
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: rgb(161 161 170); font-size: 0.8rem; font-weight: 500; pointer-events: none;
+}
+/* Make the per-column toolbox "+" clearly visible */
+.ce-editorjsColumns_col .ce-toolbar__plus {
+    color: rgb(99 102 241);
+    background: rgb(238 242 255);
+    border-radius: 6px;
+}
+
+html.de-dark .ce-editorjsColumns_col,
+.dark .ce-editorjsColumns_col {
+    border-color: rgb(63 63 70);
+    background: rgb(24 24 27);
+}
+html.de-dark .ce-editorjsColumns_col:focus-within,
+.dark .ce-editorjsColumns_col:focus-within {
+    border-color: rgb(129 140 248);
+    background: rgb(39 39 42);
+}
+html.de-dark .ce-editorjsColumns_col:not(:has(.ce-block))::before,
+.dark .ce-editorjsColumns_col:not(:has(.ce-block))::before { color: rgb(113 113 122); }
+html.de-dark .ce-editorjsColumns_col .ce-toolbar__plus,
+.dark .ce-editorjsColumns_col .ce-toolbar__plus {
+    color: rgb(165 180 252);
+    background: rgba(99 102 241 / 0.18);
+}
+
+.dark .magna-blog-pre,
+.dark .magna-blog-spacer__select { background: rgb(39 39 42); color: rgb(228 228 231); }
+.dark .magna-blog-callout[data-type="info"] { background: rgba(59 130 246 / 0.12); }
+.dark .magna-blog-cta { background: rgb(24 24 27); border-color: rgb(63 63 70); }
+
+/* ══ New blocks: Details / Social icons / Media & Text ═════════════════════
+   Editor selectors (.magna-blog-*) and frontend/preview selectors (.magna-*)
+   share this file; the renderer emits matching markup. */
+
+/* ── Details (single native <details>) ─────────────────────────────────── */
+.magna-blog-details { border: 1px solid rgb(226 232 240); border-radius: 10px; padding: 0.85rem 1.1rem; background: #fff; }
+.magna-blog-details__summary { font-weight: 600; outline: none; cursor: text; }
+.magna-blog-details__summary::before { content: '▸'; display: inline-block; margin-right: 0.5rem; color: rgb(100 116 139); }
+.magna-blog-details__text { margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px dashed rgb(226 232 240); color: rgb(71 85 105); outline: none; }
+.dark .magna-blog-details { background: rgb(24 24 27); border-color: rgb(63 63 70); }
+.dark .magna-blog-details__text { color: rgb(203 213 225); border-top-color: rgb(63 63 70); }
+
+.magna-details { border: 1px solid var(--border, #e2e8f0); border-radius: 10px; padding: 0.85rem 1.1rem; background: var(--bg-soft, #f8fafc); }
+.magna-details > summary { font-weight: 600; cursor: pointer; list-style: none; display: flex; align-items: center; gap: 0.5rem; }
+.magna-details > summary::-webkit-details-marker { display: none; }
+.magna-details > summary::before { content: '▸'; transition: transform 0.2s ease; color: var(--muted, #64748b); }
+.magna-details[open] > summary::before { transform: rotate(90deg); }
+.magna-details__body { margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px dashed var(--border, #e2e8f0); }
+
+/* ── Social icons ──────────────────────────────────────────────────────── */
+.magna-blog-social__row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+.magna-blog-social__icon { display: inline-flex; width: 22px; height: 22px; flex-shrink: 0; }
+.magna-blog-social__icon svg { width: 100%; height: 100%; }
+.magna-blog-social__net { height: 32px; border-radius: 6px; border: 1px solid rgb(226 232 240); background: #fff; padding: 0 0.4rem; }
+.magna-blog-social__url { flex: 1; }
+.dark .magna-blog-social__net { background: rgb(24 24 27); color: rgb(228 228 231); border-color: rgb(63 63 70); }
+
+.magna-social { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.magna-social[data-align="center"] { justify-content: center; }
+.magna-social[data-align="right"] { justify-content: flex-end; }
+.magna-social__link { display: inline-flex; align-items: center; justify-content: center; text-decoration: none;
+    width: 40px; height: 40px; color: #fff; background: var(--sc, #334155); transition: transform 0.15s ease, opacity 0.15s ease; }
+.magna-social__link:hover { transform: translateY(-2px); opacity: 0.9; }
+.magna-social__link svg { width: 20px; height: 20px; }
+.magna-social[data-size="sm"] .magna-social__link { width: 32px; height: 32px; }
+.magna-social[data-size="sm"] .magna-social__link svg { width: 16px; height: 16px; }
+.magna-social[data-size="lg"] .magna-social__link { width: 52px; height: 52px; }
+.magna-social[data-size="lg"] .magna-social__link svg { width: 26px; height: 26px; }
+.magna-social[data-shape="rounded"] .magna-social__link { border-radius: 10px; }
+.magna-social[data-shape="square"] .magna-social__link { border-radius: 0; }
+.magna-social[data-shape="circle"] .magna-social__link { border-radius: 50%; }
+/* Mono: single colour that follows the surrounding text; Outline: bordered, transparent. */
+.magna-social[data-style="mono"] .magna-social__link { background: var(--p-text, currentColor); color: var(--bg, #fff); }
+.magna-social[data-style="outline"] .magna-social__link { background: transparent; color: var(--p-text, currentColor);
+    border: 1.5px solid currentColor; }
+
+/* ── Media & Text ──────────────────────────────────────────────────────── */
+.magna-blog-mediatext { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: center; }
+.magna-blog-mediatext[data-valign="top"] { align-items: start; }
+.magna-blog-mediatext[data-valign="bottom"] { align-items: end; }
+.magna-blog-mediatext[data-side="right"] .magna-blog-mediatext__media { order: 2; }
+.magna-blog-mediatext__text { outline: none; }
+.magna-blog-mediatext__media img { width: 100%; border-radius: 10px; display: block; }
+.magna-blog-mediatext__placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 0.35rem; min-height: 140px; border: 1px dashed rgb(148 163 184); border-radius: 10px; color: rgb(148 163 184);
+    font-size: 0.8rem; background: rgba(148 163 184 / 0.06); cursor: pointer; }
+
+.magna-mediatext { display: grid; gap: 1.5rem; align-items: center; }
+.magna-mediatext[data-ratio="1-1"] { grid-template-columns: 1fr 1fr; }
+.magna-mediatext[data-ratio="2-1"] { grid-template-columns: 2fr 1fr; }
+.magna-mediatext[data-ratio="1-2"] { grid-template-columns: 1fr 2fr; }
+.magna-mediatext[data-ratio="2-3"] { grid-template-columns: 2fr 3fr; }
+.magna-mediatext[data-ratio="3-2"] { grid-template-columns: 3fr 2fr; }
+.magna-mediatext[data-valign="top"] { align-items: start; }
+.magna-mediatext[data-valign="bottom"] { align-items: end; }
+/* Renderer emits media first; data-side flips column order. */
+.magna-mediatext__media { order: 1; }
+.magna-mediatext__text { order: 2; }
+.magna-mediatext[data-side="right"] .magna-mediatext__media { order: 2; }
+.magna-mediatext[data-side="right"] .magna-mediatext__text { order: 1; }
+.magna-mediatext__media img { width: 100%; border-radius: 10px; display: block; }
+@media (max-width: 640px) {
+    .magna-mediatext[data-stack="1"] { grid-template-columns: 1fr !important; }
+    .magna-mediatext[data-stack="1"] .magna-mediatext__media,
+    .magna-mediatext[data-stack="1"] .magna-mediatext__text { order: 0; }
+}
+
+/* ── Inline formats: text colour palette + subscript/superscript ────────────
+   Colours are theme-fixed hexes so they read on light and dark surfaces. The
+   same classes style both the inline text (mgb-c-*) and the toolbar swatches. */
+sub, sup { font-size: 0.75em; line-height: 0; }
+.mgb-c-red    { color: #dc2626; }
+.mgb-c-orange { color: #ea580c; }
+.mgb-c-amber  { color: #d97706; }
+.mgb-c-green  { color: #16a34a; }
+.mgb-c-teal   { color: #0d9488; }
+.mgb-c-blue   { color: #2563eb; }
+.mgb-c-indigo { color: #4f46e5; }
+.mgb-c-violet { color: #7c3aed; }
+.mgb-c-pink   { color: #db2777; }
+.mgb-c-slate  { color: #475569; }
+
+/* Inline-toolbar colour palette actions */
+.mgb-color-actions { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; max-width: 168px; }
+.mgb-color-swatch { width: 20px; height: 20px; border-radius: 5px; border: 1px solid rgba(0,0,0,.12); cursor: pointer; padding: 0; }
+.mgb-color-swatch.mgb-c-red    { background: #dc2626; }
+.mgb-color-swatch.mgb-c-orange { background: #ea580c; }
+.mgb-color-swatch.mgb-c-amber  { background: #d97706; }
+.mgb-color-swatch.mgb-c-green  { background: #16a34a; }
+.mgb-color-swatch.mgb-c-teal   { background: #0d9488; }
+.mgb-color-swatch.mgb-c-blue   { background: #2563eb; }
+.mgb-color-swatch.mgb-c-indigo { background: #4f46e5; }
+.mgb-color-swatch.mgb-c-violet { background: #7c3aed; }
+.mgb-color-swatch.mgb-c-pink   { background: #db2777; }
+.mgb-color-swatch.mgb-c-slate  { background: #475569; }
+.mgb-color-clear { width: 100%; height: 24px; border-radius: 5px; border: 1px solid rgb(226 232 240);
+    background: transparent; color: rgb(100 116 139); font-size: 0.72rem; cursor: pointer; margin-bottom: 4px; }
+.ce-inline-tool--active { color: var(--de-brand, #6366f1); }
+
+/* ── Group (nested container) ──────────────────────────────────────────────
+   Editor shows the nested child editor in a styled box (always stacked, since
+   the child Editor.js is vertical); the frontend/preview applies the chosen
+   layout (stack / row / grid). */
+.magna-blog-group { background: var(--g-bg, transparent); padding: var(--g-pad, 20px); border-radius: var(--g-radius, 12px);
+    border: 1px dashed rgb(203 213 225); }
+.dark .magna-blog-group { border-color: rgb(71 85 105); }
+.magna-blog-group__holder { min-height: 60px; }
+.magna-blog-group__holder .codex-editor__redactor { padding-bottom: 0 !important; }
+
+.magna-group { background: var(--g-bg, transparent); padding: var(--g-pad, 20px); border-radius: var(--g-radius, 12px); }
+.magna-group[data-align="center"] { text-align: center; }
+.magna-group[data-align="right"] { text-align: right; }
+.magna-group[data-layout="stack"] { display: flex; flex-direction: column; gap: var(--g-gap, 16px); }
+.magna-group[data-layout="row"] { display: flex; flex-direction: row; flex-wrap: wrap; gap: var(--g-gap, 16px); align-items: flex-start; }
+.magna-group[data-layout="row"] > * { flex: 1 1 0; min-width: 180px; margin: 0; }
+.magna-group[data-layout="grid"] { display: grid; grid-template-columns: repeat(var(--g-cols, 2), 1fr); gap: var(--g-gap, 16px); }
+.magna-group[data-layout="grid"] > * { margin: 0; }
+.magna-group[data-layout="stack"] > * { margin: 0; }
+@media (max-width: 640px) {
+    .magna-group[data-layout="row"], .magna-group[data-layout="grid"] { grid-template-columns: 1fr; flex-direction: column; }
+}
+
+/* ── Footnotes ─────────────────────────────────────────────────────────────
+   A numbered reference list. Editor (.magna-blog-footnotes*) and frontend
+   (.footnotes*) share styling; the renderer emits <ol> with #fn-N anchors. */
+.magna-blog-footnotes { border-top: 1px solid rgb(226 232 240); padding-top: 0.9rem; }
+.magna-blog-footnotes__title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.5rem; outline: none; }
+.magna-blog-footnotes__list { margin: 0; padding-left: 1.4rem; }
+.magna-blog-footnotes__item { margin-bottom: 0.35rem; }
+.magna-blog-footnotes__note { display: inline-block; width: calc(100% - 4rem); color: rgb(71 85 105); outline: none; font-size: 0.9rem; }
+.dark .magna-blog-footnotes { border-top-color: rgb(63 63 70); }
+.dark .magna-blog-footnotes__note { color: rgb(203 213 225); }
+
+.footnotes { border-top: 1px solid var(--border, #e2e8f0); padding-top: 1rem; margin-top: 2rem; font-size: 0.9rem; }
+.footnotes__title { font-size: 1.05rem; margin: 0 0 0.6rem; }
+.footnotes__list { margin: 0; padding-left: 1.4rem; color: var(--muted, #64748b); }
+.footnotes__list li { margin-bottom: 0.4rem; }
+.footnotes__list li:target { background: color-mix(in srgb, var(--brand, #6366f1) 12%, transparent); border-radius: 6px; }
+.footnote__back { text-decoration: none; margin-left: 0.35rem; color: var(--brand, #6366f1); }
+
+/* ── RSS feed ──────────────────────────────────────────────────────────────
+   Editor (.magna-blog-rss*) shows a URL bar + fetched snapshot; frontend
+   (.rss*) renders the stored items. The renderer never fetches. */
+.magna-blog-rss { border: 1px solid rgb(226 232 240); border-radius: 10px; padding: 0.85rem 1rem; background: #fff; }
+.magna-blog-rss__bar { display: flex; gap: 0.5rem; }
+.magna-blog-rss__url { flex: 1; }
+.magna-blog-rss__fetch { margin: 0; white-space: nowrap; }
+.magna-blog-rss__status { font-size: 0.75rem; color: rgb(100 116 139); margin: 0.4rem 0; min-height: 1em; }
+.magna-blog-rss__item { padding: 0.4rem 0; border-top: 1px solid rgb(241 245 249); }
+.magna-blog-rss__title { font-weight: 600; font-size: 0.9rem; }
+.magna-blog-rss__date { font-size: 0.72rem; color: rgb(100 116 139); }
+.magna-blog-rss__empty { font-size: 0.8rem; color: rgb(148 163 184); padding: 0.4rem 0; }
+.dark .magna-blog-rss { background: rgb(24 24 27); border-color: rgb(63 63 70); }
+.dark .magna-blog-rss__item { border-top-color: rgb(39 39 42); }
+
+.rss { border: 1px solid var(--border, #e2e8f0); border-radius: 12px; padding: 0.9rem 1.1rem; background: var(--bg-soft, #f8fafc); }
+.rss__feed { display: block; margin-bottom: 0.5rem; }
+.rss__list { list-style: none; margin: 0; padding: 0; }
+.rss__item { padding: 0.45rem 0; border-top: 1px solid var(--border, #e2e8f0); display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+.rss__item:first-child { border-top: 0; }
+.rss__title a { color: var(--brand, #6366f1); text-decoration: none; }
+.rss__title a:hover { text-decoration: underline; }
+.rss__date { font-size: 0.78rem; color: var(--muted, #64748b); white-space: nowrap; }
+
+/* ── Link ──────────────────────────────────────────────────────────────────
+   Editor (.magna-blog-link*) shows a URL bar + text field + fetched preview;
+   frontend (.link-card / .link-plain) renders the stored link. The renderer
+   never fetches. */
+.magna-blog-link { border: 1px solid rgb(226 232 240); border-radius: 10px; padding: 0.85rem 1rem; background: #fff; }
+.magna-blog-link__bar { display: flex; gap: 0.5rem; }
+.magna-blog-link__url { flex: 1; }
+.magna-blog-link__fetch { margin: 0; white-space: nowrap; }
+.magna-blog-link__text { width: 100%; margin-top: 0.5rem; }
+.magna-blog-link__status { font-size: 0.75rem; color: rgb(100 116 139); margin: 0.4rem 0 0; min-height: 1em; }
+.magna-blog-link__card { display: flex; gap: 0.75rem; margin-top: 0.6rem; border: 1px solid rgb(241 245 249); border-radius: 8px; overflow: hidden; }
+.magna-blog-link__card[hidden] { display: none; }
+.magna-blog-link__img { flex: 0 0 96px; background-size: cover; background-position: center; }
+.magna-blog-link__body { padding: 0.6rem 0.75rem; min-width: 0; }
+.magna-blog-link__title { font-weight: 600; font-size: 0.9rem; }
+.magna-blog-link__desc { font-size: 0.8rem; color: rgb(100 116 139); margin-top: 0.15rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.magna-blog-link__host { font-size: 0.72rem; color: rgb(148 163 184); margin-top: 0.3rem; }
+.dark .magna-blog-link { background: rgb(24 24 27); border-color: rgb(63 63 70); }
+.dark .magna-blog-link__card { border-color: rgb(39 39 42); }
+
+.link-card { display: flex; gap: 0.9rem; border: 1px solid var(--border, #e2e8f0); border-radius: 12px; overflow: hidden; text-decoration: none; color: inherit; background: var(--bg-soft, #f8fafc); }
+.link-card:hover { border-color: var(--brand, #6366f1); }
+.link-card__img { flex: 0 0 120px; background-size: cover; background-position: center; }
+.link-card__body { padding: 0.8rem 1rem; min-width: 0; }
+.link-card__title { display: block; font-weight: 600; }
+.link-card__desc { display: block; font-size: 0.9rem; color: var(--muted, #64748b); margin-top: 0.2rem; }
+.link-card__host { display: block; font-size: 0.78rem; color: var(--muted, #64748b); margin-top: 0.35rem; }
+.link-plain a { color: var(--brand, #6366f1); }
