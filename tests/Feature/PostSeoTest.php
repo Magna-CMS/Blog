@@ -8,6 +8,7 @@ use Livewire\Livewire;
 use Magna\Auth\Role;
 use Magna\Seo\Enums\SubjectType;
 use Magna\Seo\Registry\SeoSourceRegistry;
+use Magna\Seo\SeoPlugin;
 use Magna\Seo\Subjects\SeoSubject;
 use Magna\Seo\Support\SeoMetaRepository;
 use Magna\Testing\PluginTestCase;
@@ -22,6 +23,13 @@ use MagnaCms\Blog\Seo\PostSeoMeta;
 uses(PluginTestCase::class);
 
 beforeEach(function (): void {
+    // magna/seo is an optional plugin: these tests cover the bridge that only
+    // exists when it is installed. Without it, PostSeoInactiveTest covers the
+    // degraded behaviour instead.
+    if (! class_exists(SeoPlugin::class)) {
+        test()->markTestSkipped('magna/seo is not installed; the SEO bridge has nothing to bind to.');
+    }
+
     $this->enablePlugin('magna/seo');
     $this->enablePlugin('magna-cms/blog');
     Filament::setCurrentPanel(Filament::getPanel('magna'));
