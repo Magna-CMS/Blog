@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Vibrant Gradient -->
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4338CA" />
+      <stop offset="45%" stop-color="#6D28D9" />
+      <stop offset="100%" stop-color="#9333EA" />
+    </linearGradient>
+
+    <!-- Card Clean Gradient -->
+    <linearGradient id="card-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#F8FAFC" />
+    </linearGradient>
+
+    <!-- Typography Gradient -->
+    <linearGradient id="title-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0284C7" />
+      <stop offset="50%" stop-color="#4F46E5" />
+      <stop offset="100%" stop-color="#7C3AED" />
+    </linearGradient>
+
+    <!-- Feather & Accent Gradient -->
+    <linearGradient id="feather-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="40%" stop-color="#818CF8" />
+      <stop offset="80%" stop-color="#F472B6" />
+      <stop offset="100%" stop-color="#FBBF24" />
+    </linearGradient>
+
+    <!-- Quill Spine Gradient -->
+    <linearGradient id="quill-spine" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#F59E0B" />
+    </linearGradient>
+
+    <!-- Sparkle Accent Gradient -->
+    <linearGradient id="spark-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047" />
+      <stop offset="100%" stop-color="#F59E0B" />
+    </linearGradient>
+
+    <!-- Drop Shadows -->
+    <filter id="card-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="20" stdDeviation="24" flood-color="#0F172A" flood-opacity="0.4" />
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#4338CA" flood-opacity="0.25" />
+    </filter>
+
+    <filter id="feather-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="6" stdDeviation="6" flood-color="#312E81" flood-opacity="0.25" />
+    </filter>
+
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="36" result="blur" />
+    </filter>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="512" height="512" rx="112" fill="url(#bg-grad)" />
+
+  <!-- Ambient Glow -->
+  <circle cx="256" cy="240" r="140" fill="#C084FC" opacity="0.35" filter="url(#glow)" />
+  <circle cx="340" cy="140" r="80" fill="#38BDF8" opacity="0.25" filter="url(#glow)" />
+
+  <!-- Editorial Card Group -->
+  <g filter="url(#card-shadow)">
+    <!-- Back Page (Layered depth) -->
+    <rect x="154" y="112" width="224" height="292" rx="28" fill="#EDE9FE" opacity="0.65" transform="rotate(7 266 258)" />
+
+    <!-- Main Card Body -->
+    <rect x="136" y="112" width="240" height="292" rx="28" fill="url(#card-grad)" stroke="#FFFFFF" stroke-width="1.5" stroke-opacity="0.8" />
+
+    <!-- Decorative Top Card Header Line -->
+    <rect x="168" y="136" width="44" height="6" rx="3" fill="#E2E8F0" />
+    
+    <!-- Feather / Quill Arching Over and Framing "Blog" -->
+    <g filter="url(#feather-shadow)" transform="translate(196, 116)">
+      <!-- Left Vane -->
+      <path d="M 120 0 
+               C 90 2, 42 22, 14 62 
+               C 6 74, 2 86, 0 96 
+               C 10 90, 24 82, 36 78 
+               C 34 84, 26 92, 18 99
+               C 32 94, 48 84, 58 76
+               C 54 82, 46 90, 38 97
+               C 52 90, 68 76, 80 62
+               C 100 40, 114 18, 120 0 Z" 
+            fill="url(#feather-grad)" />
+
+      <!-- Right/Upper Vane -->
+      <path d="M 120 0 
+               C 112 12, 100 24, 86 32
+               C 92 28, 102 20, 108 13
+               C 94 25, 78 35, 64 42
+               C 72 37, 80 30, 86 24
+               C 68 37, 44 48, 26 56
+               C 48 44, 76 28, 100 12
+               C 112 5, 118 2, 120 0 Z" 
+            fill="url(#feather-grad)" opacity="0.85" />
+
+      <!-- Quill Shaft / Rachis -->
+      <path d="M 124 -2 C 95 10, 48 42, -8 114" 
+            fill="none" 
+            stroke="url(#quill-spine)" 
+            stroke-width="3" 
+            stroke-linecap="round" />
+
+      <!-- Ink Nib / Pen Tip Extension -->
+      <path d="M -8 114 L -16 124 L -11 110 Z" fill="#F59E0B" />
+    </g>
+
+    <!-- "Blog" Title Text -->
+    <text x="256" y="246" 
+          text-anchor="middle" 
+          fill="url(#title-grad)" 
+          font-family="system-ui, -apple-system, 'Montserrat', 'Inter', sans-serif" 
+          font-size="54" 
+          font-weight="900" 
+          letter-spacing="-1.5">Blog</text>
+
+    <!-- Floating Ink Drop Accent -->
+    <circle cx="178" cy="242" r="3" fill="#6366F1" />
+    <path d="M 178 235 C 178 235, 175 239, 175 241 C 175 242.6, 176.3 244, 178 244 C 179.7 244, 181 242.6, 181 241 C 181 239, 178 235, 178 235 Z" fill="#6366F1" opacity="0.8"/>
+
+    <!-- Article Content Placeholders -->
+    <rect x="172" y="278" width="168" height="10" rx="5" fill="#94A3B8" />
+    <rect x="172" y="302" width="136" height="10" rx="5" fill="#CBD5E1" />
+    <rect x="172" y="326" width="96" height="10" rx="5" fill="#E2E8F0" />
+
+    <!-- Interactive Pill Tag -->
+    <rect x="172" y="358" width="64" height="16" rx="8" fill="url(#title-grad)" opacity="0.9" />
+    <circle cx="180" cy="366" r="3" fill="#FFFFFF" />
+  </g>
+
+  <!-- Magna Spark / Hero Star (Top Right) -->
+  <g transform="translate(348, 88)" filter="url(#feather-shadow)">
+    <path d="M 28 0 C 28 15.46 40.54 28 56 28 C 40.54 28 28 40.54 28 56 C 28 40.54 15.46 28 0 28 C 15.46 28 28 15.46 28 0 Z" 
+          fill="url(#spark-grad)" />
+  </g>
+
+  <!-- Minor Accent Spark (Bottom Left) -->
+  <g transform="translate(108, 332) scale(0.45)" opacity="0.85">
+    <path d="M 24 0 C 24 13.25 34.75 24 48 24 C 34.75 24 24 34.75 24 48 C 24 34.75 13.25 24 0 24 C 13.25 24 24 13.25 24 0 Z" 
+          fill="#FDE047" />
+  </g>
+</svg>

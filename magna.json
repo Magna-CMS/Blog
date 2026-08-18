@@ -5,6 +5,7 @@
     "version": "1.0.0",
     "author": "Magna Team",
     "license": "MIT",
+    "icon": "art/icon.svg",
     "compat": {
         "magna": "^1.0",
         "php": "^8.3"

@@ -1,15 +1,61 @@
-# Magna Blog
+<p align="center">
+  <img src="art/icon.svg" alt="Magna Blog" width="128" height="128">
+</p>
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![PHP](https://img.shields.io/badge/php-%5E8.3-777bb4.svg)](composer.json)
-[![Magna CMS](https://img.shields.io/badge/Magna%20CMS-%5E1.0-6366f1.svg)](https://github.com/Magna-CMS)
+<h1 align="center">Magna Blog</h1>
 
-A professional, headless blog and content plugin for **Magna CMS**. It manages blog content through the
-Magna admin panel using an **Editor.js** block editor, and exposes a clean, read-only delivery API for
-any frontend — a headless site, a static build, or a native app.
+<p align="center">
+  A professional, headless blog and content plugin for <strong>Magna CMS</strong>.
+</p>
 
-Magna Blog does not render a frontend of its own. It owns content authoring, organisation and delivery;
+<p align="center">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+  <a href="composer.json"><img alt="PHP" src="https://img.shields.io/badge/php-%5E8.3-777bb4.svg"></a>
+  <a href="https://github.com/Magna-CMS"><img alt="Magna CMS" src="https://img.shields.io/badge/Magna%20CMS-%5E1.0-6366f1.svg"></a>
+</p>
+
+Magna Blog manages blog content through the Magna admin panel using an **Editor.js** block editor, and
+exposes a clean, read-only delivery API for any frontend — a headless site, a static build, or a native
+app.
+
+It does not render a frontend of its own. It owns content authoring, organisation and delivery;
 presentation is left to your site.
+
+---
+
+## Screenshots
+
+### The full-screen post builder
+
+An Editor.js canvas beside a tabbed sidebar for post settings, block settings and SEO.
+
+![The Magna Blog post builder — Editor.js canvas with the post settings sidebar](art/screenshots/editor.png)
+
+### Blocks and paragraph templates
+
+Insert from the block toolbox, then restyle the selected block from the **Block** tab — thirty-six
+paragraph treatments, all sanitised server-side, no CSS required.
+
+![The block toolbox open beside the paragraph template gallery](art/screenshots/editor-blocks.png)
+
+### Posts
+
+Every post with its category, status, visibility, author and schedule, filterable and searchable.
+
+![The Posts table in the Magna admin panel](art/screenshots/posts.png)
+
+### Per-post SEO
+
+With the optional **Magna SEO** plugin installed, each post gains a search-appearance panel: SEO title,
+meta description, canonical URL, focus keyword, robots directives and social cards.
+
+![The SEO tab of the post builder](art/screenshots/editor-seo.png)
+
+### Settings
+
+General, slugs, permalinks, editor, content and comment options — all in the admin panel.
+
+![The Blog settings page](art/screenshots/settings.png)
 
 ---
 
@@ -55,52 +101,22 @@ presentation is left to your site.
 - PHP **8.3+**
 - **Magna CMS** ^1.0 (provides Filament v4, media library, users, permissions, settings, revisions,
   privacy and webhook subsystems)
-- Node.js (only to build the editor bundle — see [Developer installation](#developer-installation))
 
 ## Installation
 
-The recommended way to install Magna Blog is through the Magna CMS admin panel.
+Magna Blog is installed from the **Plugin Marketplace inside Magna CMS** — no Composer commands, no
+manual file copying, no build step.
 
-### 1. Install Magna CMS
+1. Sign in to your Magna CMS admin panel.
+2. Go to **Plugins → Add New Plugin**.
+3. Find **Magna Blog** in the marketplace and click **Install**.
+4. Activate the plugin when the install finishes.
+5. Open **Blog → Posts** and write your first post.
 
-Install and configure Magna CMS first.
+![Magna Blog installed and active on the Plugins page](art/screenshots/marketplace.png)
 
-### 2. Open the Magna Admin Panel
-
-Sign in to the Magna CMS administration panel.
-
-### 3. Open Plugins
-
-Navigate to **Admin → Plugins**.
-
-### 4. Install from Marketplace
-
-Find **Magna Blog** in the Magna CMS Plugin Marketplace and click **Install**.
-
-### 5. Activate
-
-Activate the plugin if required.
-
-### 6. Start blogging
-
-Open the **Blog** section in the Magna Admin Panel and create your first post.
-
-### Developer installation
-
-For local development against a Magna CMS application, the plugin lives under the application's
-`plugins-dev/` path repository. After placing the plugin there, build the editor bundle and enable it:
-
-```bash
-# From the plugin directory
-npm ci
-npm run build            # produces dist/blog-editor.js (a required runtime asset)
-
-# From the Magna CMS application
-php artisan filament:assets
-```
-
-Then enable **Magna Blog** from **Admin → Plugins**. The compiled editor bundle (`dist/blog-editor.js`)
-is a build artifact and is not committed; installs and releases must build it.
+Updates arrive the same way: when a new version is published, the Plugins page shows it under **Update
+Available**.
 
 ## Configuration
 
@@ -170,11 +186,14 @@ image, video and audio, embeds, maps, social icons, footnotes, RSS, table of con
 group and columns layouts, and dynamic post blocks (excerpt, featured image). Every block is validated
 server-side before it can be persisted.
 
-## Development
+## Contributing
+
+Working on the plugin itself (rather than using it) needs Node.js, because the editor bundle is a build
+artifact:
 
 ```bash
 npm ci
-npm run build            # rebuild the Editor.js bundle after changing resources/js/
+npm run build            # rebuild dist/blog-editor.js after changing resources/js/
 php artisan filament:assets
 ```
 
