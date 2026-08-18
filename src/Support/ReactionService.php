@@ -36,10 +36,15 @@ class ReactionService
         return in_array($type, $this->types(), true);
     }
 
-    /** Non-reversible per-visitor fingerprint; never stores the raw IP. */
+    /**
+     * Non-reversible per-visitor fingerprint; never stores the raw IP. Keyed
+     * with the app key via HMAC so the visitor identity cannot be brute-forced
+     * from a leaked reactions table — this is signing per-visitor data, not an
+     * install identity (which is InstallFingerprint's job).
+     */
     public function fingerprint(?string $ip, ?string $userAgent): string
     {
-        return hash('sha256', ($ip ?? '').'|'.($userAgent ?? '').'|'.config('app.key'));
+        return hash_hmac('sha256', ($ip ?? '').'|'.($userAgent ?? ''), (string) config('app.key'));
     }
 
     /**

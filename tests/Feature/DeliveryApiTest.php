@@ -17,7 +17,7 @@ beforeEach(function (): void {
 });
 
 /** Mint a delivery-scope bearer token, as the delivery routes require one. */
-function deliveryToken(): string
+function blogDeliveryToken(): string
 {
     $user = User::factory()->create();
     $token = $user->createToken('test-delivery', ['delivery']);
@@ -44,7 +44,7 @@ it('lists only published public posts with pagination meta', function (): void {
     makePost(['slug' => 'private-one', 'title' => 'Private one', 'visibility' => 'private']);
     makePost(['slug' => 'future-one', 'title' => 'Future one', 'published_at' => now()->addWeek()]);
 
-    $response = $this->withToken(deliveryToken())->getJson('/api/v1/blog/posts');
+    $response = $this->withToken(blogDeliveryToken())->getJson('/api/v1/blog/posts');
 
     $response->assertOk()
         ->assertJsonPath('meta.total', 1)
@@ -55,7 +55,7 @@ it('lists only published public posts with pagination meta', function (): void {
 it('serves a single published post with its content', function (): void {
     makePost(['slug' => 'read-me', 'title' => 'Read me']);
 
-    $this->withToken(deliveryToken())->getJson('/api/v1/blog/posts/read-me')
+    $this->withToken(blogDeliveryToken())->getJson('/api/v1/blog/posts/read-me')
         ->assertOk()
         ->assertJsonPath('data.slug', 'read-me')
         ->assertJsonPath('data.title', 'Read me');
@@ -65,7 +65,7 @@ it('returns 404 for a draft or private post slug', function (): void {
     makePost(['slug' => 'hidden-draft', 'status' => 'draft', 'published_at' => null]);
     makePost(['slug' => 'hidden-private', 'visibility' => 'private']);
 
-    $token = deliveryToken();
+    $token = blogDeliveryToken();
     $this->withToken($token)->getJson('/api/v1/blog/posts/hidden-draft')->assertNotFound();
     $this->withToken($token)->getJson('/api/v1/blog/posts/hidden-private')->assertNotFound();
     $this->withToken($token)->getJson('/api/v1/blog/posts/does-not-exist')->assertNotFound();
@@ -81,7 +81,7 @@ it('searches posts over title, excerpt and block text', function (): void {
     ]);
     makePost(['slug' => 'no-hit', 'title' => 'Django guide', 'content' => ['blocks' => []]]);
 
-    $response = $this->withToken(deliveryToken())->getJson('/api/v1/blog/posts?search=Laravel');
+    $response = $this->withToken(blogDeliveryToken())->getJson('/api/v1/blog/posts?search=Laravel');
 
     $response->assertOk()->assertJsonPath('meta.total', 3);
     $slugs = collect($response->json('data'))->pluck('slug')->all();
@@ -92,7 +92,7 @@ it('narrows multi-word searches with AND semantics', function (): void {
     makePost(['slug' => 'both', 'title' => 'Laravel scopes explained']);
     makePost(['slug' => 'one-only', 'title' => 'Laravel routing']);
 
-    $this->withToken(deliveryToken())->getJson('/api/v1/blog/posts?search=Laravel+scopes')
+    $this->withToken(blogDeliveryToken())->getJson('/api/v1/blog/posts?search=Laravel+scopes')
         ->assertOk()
         ->assertJsonPath('meta.total', 1)
         ->assertJsonPath('data.0.slug', 'both');
@@ -104,7 +104,7 @@ it('filters posts by category slug', function (): void {
     makePost(['slug' => 'in-news', 'title' => 'In news', 'category_id' => $news->id]);
     makePost(['slug' => 'in-other', 'title' => 'In other', 'category_id' => $other->id]);
 
-    $this->withToken(deliveryToken())->getJson('/api/v1/blog/posts?category=news')
+    $this->withToken(blogDeliveryToken())->getJson('/api/v1/blog/posts?category=news')
         ->assertOk()
         ->assertJsonPath('meta.total', 1)
         ->assertJsonPath('data.0.slug', 'in-news');
@@ -116,7 +116,7 @@ it('filters posts by tag slug', function (): void {
     $tagged->tags()->attach($tag->id);
     makePost(['slug' => 'untagged', 'title' => 'Untagged']);
 
-    $this->withToken(deliveryToken())->getJson('/api/v1/blog/posts?tag=php')
+    $this->withToken(blogDeliveryToken())->getJson('/api/v1/blog/posts?tag=php')
         ->assertOk()
         ->assertJsonPath('meta.total', 1)
         ->assertJsonPath('data.0.slug', 'tagged');
@@ -126,7 +126,7 @@ it('filters posts by publish year and month', function (): void {
     makePost(['slug' => 'jan', 'title' => 'January', 'published_at' => '2025-01-15 10:00:00']);
     makePost(['slug' => 'feb', 'title' => 'February', 'published_at' => '2025-02-15 10:00:00']);
 
-    $this->withToken(deliveryToken())->getJson('/api/v1/blog/posts?year=2025&month=1')
+    $this->withToken(blogDeliveryToken())->getJson('/api/v1/blog/posts?year=2025&month=1')
         ->assertOk()
         ->assertJsonPath('meta.total', 1)
         ->assertJsonPath('data.0.slug', 'jan');
@@ -136,19 +136,19 @@ it('sorts posts by title ascending when asked', function (): void {
     makePost(['slug' => 'zed', 'title' => 'Zed', 'published_at' => now()->subDays(1)]);
     makePost(['slug' => 'alpha', 'title' => 'Alpha', 'published_at' => now()->subDays(2)]);
 
-    $this->withToken(deliveryToken())->getJson('/api/v1/blog/posts?sort=title')
+    $this->withToken(blogDeliveryToken())->getJson('/api/v1/blog/posts?sort=title')
         ->assertOk()
         ->assertJsonPath('data.0.slug', 'alpha')
         ->assertJsonPath('data.1.slug', 'zed');
 });
 
 it('rejects an unknown sort key', function (): void {
-    $this->withToken(deliveryToken())->getJson('/api/v1/blog/posts?sort=drop_table')
+    $this->withToken(blogDeliveryToken())->getJson('/api/v1/blog/posts?sort=drop_table')
         ->assertStatus(422);
 });
 
 it('rejects month without year', function (): void {
-    $this->withToken(deliveryToken())->getJson('/api/v1/blog/posts?month=3')
+    $this->withToken(blogDeliveryToken())->getJson('/api/v1/blog/posts?month=3')
         ->assertStatus(422);
 });
 
@@ -160,7 +160,7 @@ it('lists categories as a tree with live public post counts', function (): void 
     makePost(['slug' => 'p1', 'title' => 'P1', 'category_id' => $child->id]);
     makePost(['slug' => 'draft', 'title' => 'Draft', 'category_id' => $child->id, 'status' => 'draft', 'published_at' => null]);
 
-    $response = $this->withToken(deliveryToken())->getJson('/api/v1/blog/categories');
+    $response = $this->withToken(blogDeliveryToken())->getJson('/api/v1/blog/categories');
 
     $response->assertOk();
     $tech = collect($response->json('data'))->firstWhere('slug', 'tech');
@@ -173,7 +173,7 @@ it('lists only tags that have a live public post', function (): void {
     Tag::create(['name' => 'Unused', 'slug' => 'unused']);
     makePost(['slug' => 'tp', 'title' => 'TP'])->tags()->attach($used->id);
 
-    $response = $this->withToken(deliveryToken())->getJson('/api/v1/blog/tags');
+    $response = $this->withToken(blogDeliveryToken())->getJson('/api/v1/blog/tags');
 
     $response->assertOk();
     $slugs = collect($response->json('data'))->pluck('slug')->all();
@@ -185,7 +185,7 @@ it('exposes adjacent prev/next neighbours on a single post', function (): void {
     makePost(['slug' => 'middle', 'title' => 'Middle', 'published_at' => now()->subDays(2)]);
     makePost(['slug' => 'newer', 'title' => 'Newer', 'published_at' => now()->subDays(1)]);
 
-    $this->withToken(deliveryToken())->getJson('/api/v1/blog/posts/middle')
+    $this->withToken(blogDeliveryToken())->getJson('/api/v1/blog/posts/middle')
         ->assertOk()
         ->assertJsonPath('data.adjacent.prev.slug', 'older')
         ->assertJsonPath('data.adjacent.next.slug', 'newer');
@@ -194,7 +194,7 @@ it('exposes adjacent prev/next neighbours on a single post', function (): void {
 it('returns null adjacent neighbours at the ends', function (): void {
     makePost(['slug' => 'solo', 'title' => 'Solo']);
 
-    $this->withToken(deliveryToken())->getJson('/api/v1/blog/posts/solo')
+    $this->withToken(blogDeliveryToken())->getJson('/api/v1/blog/posts/solo')
         ->assertOk()
         ->assertJsonPath('data.adjacent.prev', null)
         ->assertJsonPath('data.adjacent.next', null);
@@ -213,7 +213,7 @@ it('exposes only allowlisted public meta, typed, and hides the rest', function (
         ['key' => 'internal_secret', 'type' => 'string', 'value' => 'do not leak'],
     ]);
 
-    $response = $this->withToken(deliveryToken())->getJson('/api/v1/blog/posts/meta-post');
+    $response = $this->withToken(blogDeliveryToken())->getJson('/api/v1/blog/posts/meta-post');
 
     $response->assertOk()
         ->assertJsonPath('data.meta.subtitle', 'A subtitle')
@@ -227,7 +227,7 @@ it('serves no meta when nothing is allowlisted', function (): void {
     $post = makePost(['slug' => 'no-public-meta', 'title' => 'No public meta']);
     $post->meta()->create(['key' => 'anything', 'type' => 'string', 'value' => 'hidden']);
 
-    $this->withToken(deliveryToken())->getJson('/api/v1/blog/posts/no-public-meta')
+    $this->withToken(blogDeliveryToken())->getJson('/api/v1/blog/posts/no-public-meta')
         ->assertOk()
         ->assertJsonPath('data.meta', []);
 });
@@ -236,7 +236,7 @@ it('filters to featured posts and exposes the flag', function (): void {
     makePost(['slug' => 'sticky', 'title' => 'Sticky', 'is_featured' => true]);
     makePost(['slug' => 'plain', 'title' => 'Plain']);
 
-    $this->withToken(deliveryToken())->getJson('/api/v1/blog/posts?featured=1')
+    $this->withToken(blogDeliveryToken())->getJson('/api/v1/blog/posts?featured=1')
         ->assertOk()
         ->assertJsonPath('meta.total', 1)
         ->assertJsonPath('data.0.slug', 'sticky')
@@ -248,7 +248,7 @@ it('sorts posts by view count descending', function (): void {
     makePost(['slug' => 'cold', 'title' => 'Cold'])->forceFill(['views' => 3])->save();
     makePost(['slug' => 'hot', 'title' => 'Hot'])->forceFill(['views' => 99])->save();
 
-    $this->withToken(deliveryToken())->getJson('/api/v1/blog/posts?sort=-views')
+    $this->withToken(blogDeliveryToken())->getJson('/api/v1/blog/posts?sort=-views')
         ->assertOk()
         ->assertJsonPath('data.0.slug', 'hot')
         ->assertJsonPath('data.1.slug', 'cold');
@@ -257,7 +257,7 @@ it('sorts posts by view count descending', function (): void {
 it('buffers a view on show and reflects it after a flush', function (): void {
     makePost(['slug' => 'counted', 'title' => 'Counted']);
 
-    $this->withToken(deliveryToken())->getJson('/api/v1/blog/posts/counted')->assertOk();
+    $this->withToken(blogDeliveryToken())->getJson('/api/v1/blog/posts/counted')->assertOk();
 
     // Buffered, not yet written.
     expect(Post::query()->where('slug', 'counted')->value('views'))->toBe(0);

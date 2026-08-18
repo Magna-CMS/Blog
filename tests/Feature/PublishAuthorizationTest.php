@@ -99,7 +99,10 @@ it('lets a publisher publish via the status select', function (): void {
 
 it('does not let a non-publisher move an existing draft to published on edit', function (): void {
     $contributor = blogUserWith(['blog.posts.view', 'blog.posts.edit']);
-    $post = Post::create(['title' => 'Draft post', 'slug' => 'draft-post', 'status' => 'draft']);
+    $post = Post::create([
+        'title' => 'Draft post', 'slug' => 'draft-post',
+        'author_id' => $contributor->id, 'status' => 'draft',
+    ]);
 
     $this->actingAs($contributor);
 
@@ -172,7 +175,7 @@ it('lets a publisher feature a post via the list toggle column', function (): vo
 it('does not silently unpublish a live post when a non-publisher edits it', function (): void {
     $contributor = blogUserWith(['blog.posts.view', 'blog.posts.edit']);
     $post = Post::create([
-        'title' => 'Live post', 'slug' => 'live-post',
+        'title' => 'Live post', 'slug' => 'live-post', 'author_id' => $contributor->id,
         'status' => 'published', 'visibility' => 'public', 'published_at' => now()->subDay(),
     ]);
 
