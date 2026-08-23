@@ -9,12 +9,15 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Translation\Translator;
+use Magna\Blocks\DataSources\DataSource;
 use Magna\Contracts\HandlesPersonalData;
 use Magna\Contracts\RegistersAdminResources;
 use Magna\Contracts\RegistersCommands;
+use Magna\Contracts\RegistersDataSources;
 use Magna\Contracts\RegistersSettingsPages;
 use Magna\Contracts\RegistersWebhookEvents;
 use Magna\Plugins\Plugin;
+use MagnaCms\Blog\Blocks\DataSources\PostsSource;
 use MagnaCms\Blog\Commands\ExportContentCommand;
 use MagnaCms\Blog\Commands\FlushViewsCommand;
 use MagnaCms\Blog\Commands\ImportContentCommand;
@@ -41,7 +44,7 @@ use MagnaCms\Blog\Support\Spam\SpamCheck;
 use MagnaCms\Blog\Support\VersionedCss;
 use MagnaCms\Blog\Support\VersionedJs;
 
-class BlogPlugin extends Plugin implements HandlesPersonalData, RegistersAdminResources, RegistersCommands, RegistersSettingsPages, RegistersWebhookEvents
+class BlogPlugin extends Plugin implements HandlesPersonalData, RegistersAdminResources, RegistersCommands, RegistersDataSources, RegistersSettingsPages, RegistersWebhookEvents
 {
     public function register(): void
     {
@@ -164,6 +167,23 @@ class BlogPlugin extends Plugin implements HandlesPersonalData, RegistersAdminRe
             'blog.post.published',
             'blog.post.updated',
             'blog.post.deleted',
+        ];
+    }
+
+    /**
+     * Post feeds the Pages Loop block can place on any built page.
+     *
+     * Registered as two handles rather than one configurable source because
+     * the Loop resolver passes only `limit` to a source — a choice an editor
+     * makes in the block's picker has to be a handle of its own.
+     *
+     * @return list<DataSource>
+     */
+    public function dataSources(): array
+    {
+        return [
+            new PostsSource,
+            new PostsSource(featuredOnly: true),
         ];
     }
 
