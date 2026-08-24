@@ -9,21 +9,27 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Translation\Translator;
+use Magna\Blocks\BlockDefinition;
 use Magna\Blocks\DataSources\DataSource;
+use Magna\Blocks\Resolution\BlockDataResolver;
 use Magna\Contracts\HandlesPersonalData;
 use Magna\Contracts\RegistersAdminResources;
+use Magna\Contracts\RegistersBlocks;
 use Magna\Contracts\RegistersCommands;
 use Magna\Contracts\RegistersDataSources;
 use Magna\Contracts\RegistersSettingsPages;
 use Magna\Contracts\RegistersWebhookEvents;
 use Magna\Plugins\Plugin;
+use MagnaCms\Blog\Blocks\BlogPostsBlockResolver;
 use MagnaCms\Blog\Blocks\DataSources\PostsSource;
+use MagnaCms\Blog\Blocks\FaqBlockResolver;
 use MagnaCms\Blog\Commands\ExportContentCommand;
 use MagnaCms\Blog\Commands\FlushViewsCommand;
 use MagnaCms\Blog\Commands\ImportContentCommand;
 use MagnaCms\Blog\Commands\ImportWxrCommand;
 use MagnaCms\Blog\Commands\PublishScheduledCommand;
 use MagnaCms\Blog\Commands\ReindexSearchCommand;
+use MagnaCms\Blog\Editor\BlockSchema;
 use MagnaCms\Blog\Filament\Pages\BlogSettingsPage;
 use MagnaCms\Blog\Filament\Resources\CategoryResource;
 use MagnaCms\Blog\Filament\Resources\CommentResource;
@@ -44,7 +50,7 @@ use MagnaCms\Blog\Support\Spam\SpamCheck;
 use MagnaCms\Blog\Support\VersionedCss;
 use MagnaCms\Blog\Support\VersionedJs;
 
-class BlogPlugin extends Plugin implements HandlesPersonalData, RegistersAdminResources, RegistersCommands, RegistersDataSources, RegistersSettingsPages, RegistersWebhookEvents
+class BlogPlugin extends Plugin implements HandlesPersonalData, RegistersAdminResources, RegistersBlocks, RegistersCommands, RegistersDataSources, RegistersSettingsPages, RegistersWebhookEvents
 {
     public function register(): void
     {
@@ -76,6 +82,23 @@ class BlogPlugin extends Plugin implements HandlesPersonalData, RegistersAdminRe
     {
         $this->loadViewsFrom('resources/views', 'blog');
 
+        /*
+         * Block views go on the SHARED magna:: namespace, because the
+         * block-view resolution chain (theme::blocks.X, then
+         * magna::blocks.X) has no lookup in a registering plugin's own
+         * namespace — so a plugin shipping a block has nowhere else to put
+         * its template.
+         *
+         * From a directory that holds NOTHING ELSE, deliberately. Adding
+         * `resources/views` here instead puts every one of this plugin's
+         * views on the shared namespace, ahead of plugins that register
+         * later: `filament/settings.blade.php` then shadows the Pages
+         * plugin's view of the same name and breaks a screen that has
+         * nothing to do with the blog. Only what is meant to be shared is
+         * shared.
+         */
+        $this->loadViewsFrom('resources/block-views', 'magna');
+
         // Register the `blog::` translation namespace. The SDK base class exposes
         // loadViewsFrom / mergeConfigFrom but deliberately leaves translation
         // registration to a plain container call (it lives only on Laravel's
@@ -105,6 +128,23 @@ class BlogPlugin extends Plugin implements HandlesPersonalData, RegistersAdminRe
         // coverage. class_exists-guarded inside, so this is a no-op with SEO absent
         // and the blog never hard-depends on it.
         PostSeoMeta::registerSource($this->app);
+
+        /*
+         * Dynamic data for the blog-posts block, through the shared resolve
+         * step every block's data goes through.
+         *
+         * LAST, and deferred to booted(): this resolves out of the
+         * container, and anything that throws earlier in boot() takes the
+         * FilamentAsset::register() call above with it — which would strip
+         * the post editor of its JavaScript and leave an admin screen that
+         * looks broken for a reason nowhere near the blog editor. Nothing
+         * here needs to run before the admin surface is registered.
+         */
+        $this->app->booted(function (): void {
+            $resolvers = app(BlockDataResolver::class);
+            $resolvers->register(app(BlogPostsBlockResolver::class));
+            $resolvers->register(app(FaqBlockResolver::class));
+        });
 
         $this->app->booted(function (): void {
             $schedule = $this->app->make(Schedule::class);
@@ -185,6 +225,109 @@ class BlogPlugin extends Plugin implements HandlesPersonalData, RegistersAdminRe
             new PostsSource,
             new PostsSource(featuredOnly: true),
         ];
+    }
+
+    /**
+     * A block of the blog's own, in the builder's Add panel.
+     *
+     * The data sources above already put posts on a page, but only through
+     * the Loop block and its dropdown — and "Loop" is not what somebody
+     * looks for when what they want is their blog. This is the same data
+     * behind a name that can be found; it reads through the same
+     * PostsSource, so there is still one place deciding what a visitor may
+     * see.
+     *
+     * @return list<BlockDefinition>
+     */
+    public function blocks(): array
+    {
+        return [
+            BlockDefinition::fromArray([
+                'handle' => 'blog-posts',
+                'label' => 'Blog posts',
+                'icon' => 'blocks:list',
+                'category' => 'blog',
+                'fields' => [
+                    ['handle' => 'heading', 'type' => 'text', 'label' => 'Heading', 'required' => false],
+                    [
+                        'handle' => 'feed',
+                        'type' => 'select',
+                        'label' => 'Show',
+                        'required' => false,
+                        'default' => 'latest',
+                        'options' => [
+                            'latest' => 'Latest posts',
+                            'featured' => 'Featured posts',
+                        ],
+                    ],
+                    ['handle' => 'limit', 'type' => 'number', 'label' => 'How many', 'required' => false, 'default' => 6],
+                ],
+            ]),
+            BlockDefinition::fromArray([
+                'handle' => 'blog-faq',
+                // Not plain "FAQ": core ships one under that exact label, and
+                // two identical tiles in the panel is a choice an editor
+                // cannot make. The name says what this one has that the
+                // other does not.
+                'label' => 'Styled FAQ',
+                'icon' => 'blocks:question',
+                'category' => 'blog',
+                'fields' => [
+                    [
+                        'handle' => 'items',
+                        'type' => 'repeater',
+                        'label' => 'Questions',
+                        'required' => false,
+                        'fields' => [
+                            ['handle' => 'question', 'type' => 'text', 'label' => 'Question', 'required' => true],
+                            ['handle' => 'answer', 'type' => 'textarea', 'label' => 'Answer', 'required' => true],
+                        ],
+                    ],
+                    [
+                        'handle' => 'template',
+                        'type' => 'select',
+                        'label' => 'Style',
+                        'required' => false,
+                        'default' => 'card',
+                        // Built from the schema's own list rather than a
+                        // second copy of it: a template added to the editor
+                        // shows up here without anyone remembering to.
+                        'options' => self::faqTemplateOptions(),
+                    ],
+                    [
+                        'handle' => 'open_first',
+                        'type' => 'select',
+                        'label' => 'First answer',
+                        'required' => false,
+                        'default' => 'no',
+                        'options' => ['no' => 'Closed', 'yes' => 'Open'],
+                    ],
+                    [
+                        'handle' => 'schema',
+                        'type' => 'select',
+                        'label' => 'FAQ structured data',
+                        'required' => false,
+                        'default' => 'yes',
+                        'options' => ['yes' => 'Include', 'no' => 'Leave out'],
+                    ],
+                ],
+            ]),
+        ];
+    }
+
+    /**
+     * The FAQ styles, labelled for a picker.
+     *
+     * @return array<string, string>
+     */
+    private static function faqTemplateOptions(): array
+    {
+        $options = [];
+        foreach (BlockSchema::FAQ_TEMPLATES as $template) {
+            $options[$template] = ucfirst(str_replace('-', ' ', $template));
+        }
+
+        return $options;
     }
 
     /**
