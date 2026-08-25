@@ -36,10 +36,38 @@ use MagnaCms\Blog\Support\BlockRenderer;
  */
 final class FaqBlockResolver implements ResolvesBlockData
 {
-    public function __construct(
-        private readonly EditorJsSanitizer $sanitizer,
-        private readonly BlockRenderer $renderer,
-    ) {}
+    private ?EditorJsSanitizer $sanitizer = null;
+
+    private ?BlockRenderer $renderer = null;
+
+    /*
+     * Collaborators resolved on FIRST USE, not injected.
+     *
+     * Every registered resolver is built when the plugin boots, and
+     * EditorJsSanitizer's constructor builds two HtmlSanitizers — one of
+     * them calling allowSafeElements(), which materialises the whole W3C
+     * attribute table. Constructor-injecting it meant paying for that on
+     * every boot of an app with the blog enabled, whether or not any page
+     * held an FAQ; across a full test suite it exhausted a gigabyte.
+     *
+     * Resolved through app() rather than by holding the container: a
+     * resolver that carries the container carries the entire application
+     * graph with it, and anything that exports one — a failure diff, a dump
+     * — walks that graph until it runs out of memory. This class stays a
+     * small object that knows how to find two collaborators.
+     *
+     * The plugin binds EditorJsSanitizer as a singleton, so a page with
+     * five FAQ blocks still builds one.
+     */
+    private function sanitizer(): EditorJsSanitizer
+    {
+        return $this->sanitizer ??= app(EditorJsSanitizer::class);
+    }
+
+    private function renderer(): BlockRenderer
+    {
+        return $this->renderer ??= app(BlockRenderer::class);
+    }
 
     public function handle(): string
     {
@@ -70,7 +98,7 @@ final class FaqBlockResolver implements ResolvesBlockData
 
         // Sanitise, THEN render — the order the blog itself uses, moved to
         // the point where page-builder data enters.
-        $clean = $this->sanitizer->sanitize(['blocks' => [[
+        $clean = $this->sanitizer()->sanitize(['blocks' => [[
             'type' => 'faq',
             'data' => [
                 'items' => $items,
@@ -82,6 +110,24 @@ final class FaqBlockResolver implements ResolvesBlockData
             ],
         ]]]);
 
-        return ['html' => $this->renderer->render($clean)];
+        /*
+         * Nothing SURVIVED, not nothing was given.
+         *
+         * The sanitiser drops an item with neither question nor answer, so a
+         * freshly seeded FAQ — one blank row — cleans down to no items and
+         * BlockRenderer emits `<div class="faq">` with no children. That div
+         * has no height, which in the builder means a block nobody can
+         * click: the canvas marks it, and the marker is invisible.
+         *
+         * Returning nothing instead hands it to the empty-block placeholder,
+         * which is drawn precisely so a block with nothing to show is still
+         * selectable.
+         */
+        $survived = $clean['blocks'][0]['data']['items'] ?? [];
+        if (! is_array($survived) || $survived === []) {
+            return ['html' => ''];
+        }
+
+        return ['html' => $this->renderer()->render($clean)];
     }
 }

@@ -8,6 +8,12 @@
     absent and this renders nothing rather than falling back to raw block
     data — a missing resolve step must fail closed.
 
+    The wrapper is not decoration. BuilderMarkup stamps the block's identity
+    onto the FIRST element of this output, and the stylesheet <link> below
+    used to be that element: the block's node in the canvas became an
+    invisible <link>, so the block could not be selected at all. A visible
+    element has to come first.
+
     The stylesheet is linked rather than inlined: it is one shared file (the
     template rules name the editor and the page in the same selector), so a
     <link> lets the browser cache it across pages instead of pushing ~56KB
@@ -18,9 +24,11 @@
     $html = $block['_resolved']['html'] ?? '';
 @endphp
 @if($html !== '')
-    @once
-        <link rel="stylesheet" href="{{ asset('css/magna-cms/blog/blog-editor.css') }}">
-    @endonce
+    <div class="magna-block magna-block--blog-faq">
+        @once
+            <link rel="stylesheet" href="{{ asset('css/magna-cms/blog/blog-editor.css') }}">
+        @endonce
 
-    {!! $html !!}
+        {!! $html !!}
+    </div>
 @endif

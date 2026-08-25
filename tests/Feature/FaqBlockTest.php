@@ -130,6 +130,15 @@ it('opens the first answer only when told to', function (): void {
 
 it('renders nothing at all until it has a question', function (): void {
     expect(resolveFaq(['items' => [], 'template' => 'neon']))->toBe('');
+
+    /*
+     * A row that exists but is blank counts as nothing too. The block seeds
+     * one, and the sanitiser drops an item with neither question nor
+     * answer — so rendering the shell anyway produced `<div class="faq">`
+     * with no children, which has no height. In the builder that is a block
+     * the canvas marks and nobody can click.
+     */
+    expect(resolveFaq(['items' => [['question' => '', 'answer' => '']]]))->toBe('');
 });
 
 it('fails closed when the resolve step did not run', function (): void {
@@ -155,4 +164,22 @@ it('links its stylesheet once, however many FAQs a page holds', function (): voi
     );
 
     expect(substr_count($html, 'blog-editor.css'))->toBe(1);
+});
+
+it('opens with a visible element so the canvas can mark it', function (): void {
+    /*
+     * BuilderMarkup stamps the block's identity onto the FIRST element of
+     * its output. The stylesheet <link> was that element until this was
+     * found: the block's node in the canvas became an invisible <link>, so
+     * the block could not be selected at all — clicking it in the builder
+     * did nothing, with no error to explain why.
+     */
+    $html = trim(Blade::render(
+        (string) file_get_contents(__DIR__.'/../../resources/block-views/blocks/blog-faq.blade.php'),
+        ['block' => ['data' => [], '_resolved' => ['html' => '<div class="faq"></div>']]],
+    ));
+
+    expect($html)->toStartWith('<div')
+        // The stylesheet still ships — inside the wrapper, not ahead of it.
+        ->and($html)->toContain('blog-editor.css');
 });

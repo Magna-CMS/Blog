@@ -30,6 +30,7 @@ use MagnaCms\Blog\Commands\ImportWxrCommand;
 use MagnaCms\Blog\Commands\PublishScheduledCommand;
 use MagnaCms\Blog\Commands\ReindexSearchCommand;
 use MagnaCms\Blog\Editor\BlockSchema;
+use MagnaCms\Blog\Editor\EditorJsSanitizer;
 use MagnaCms\Blog\Filament\Pages\BlogSettingsPage;
 use MagnaCms\Blog\Filament\Resources\CategoryResource;
 use MagnaCms\Blog\Filament\Resources\CommentResource;
@@ -59,6 +60,16 @@ class BlogPlugin extends Plugin implements HandlesPersonalData, RegistersAdminRe
         // Shared registry of declared post-meta fields; other plugins resolve the
         // same instance to declare their own custom fields (labels, types, public).
         $this->app->singleton(MetaRegistry::class);
+
+        /*
+         * One sanitiser per app.
+         *
+         * Its constructor builds two HtmlSanitizers, one of which
+         * materialises the whole W3C attribute table — cheap once, and
+         * measurably not cheap per render. Page rendering resolves it for
+         * every FAQ block on the page.
+         */
+        $this->app->singleton(EditorJsSanitizer::class);
 
         // Comment spam driver, selected from config. Honeypot is always present;
         // 'akismet' layers remote scoring on top.
@@ -278,6 +289,16 @@ class BlogPlugin extends Plugin implements HandlesPersonalData, RegistersAdminRe
                         'type' => 'repeater',
                         'label' => 'Questions',
                         'required' => false,
+                        /*
+                         * One blank row to start, so an inserted FAQ opens
+                         * with somewhere to type. Without it the first
+                         * thing an editor must do is press Add — and that
+                         * click is lost if the canvas happens to be
+                         * reloading from the previous edit, because the
+                         * inspector has no selected node to write to for
+                         * that moment.
+                         */
+                        'default' => [['question' => '', 'answer' => '']],
                         'fields' => [
                             ['handle' => 'question', 'type' => 'text', 'label' => 'Question', 'required' => true],
                             ['handle' => 'answer', 'type' => 'textarea', 'label' => 'Answer', 'required' => true],
