@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MagnaCms\Blog\Support;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Magna\Users\User;
 use MagnaCms\Blog\Editor\EditorJsSanitizer;
 use MagnaCms\Blog\Models\Category;
@@ -132,14 +133,15 @@ class BlogArchive
 
         // First pass: upsert every category without touching parents.
         foreach ($rows as $row) {
-            if (! is_array($row) || ! is_string($row['slug'] ?? null) || $row['slug'] === '') {
+            $slug = is_array($row) ? $this->slug($row['slug'] ?? null) : '';
+            if ($slug === '') {
                 continue;
             }
 
             Category::query()->updateOrCreate(
-                ['slug' => $row['slug']],
+                ['slug' => $slug],
                 [
-                    'name' => (string) ($row['name'] ?? $row['slug']),
+                    'name' => (string) ($row['name'] ?? $slug),
                     'description' => is_string($row['description'] ?? null) ? $row['description'] : null,
                 ],
             );
@@ -148,16 +150,13 @@ class BlogArchive
 
         // Second pass: link parents now that every slug exists.
         foreach ($rows as $row) {
-            if (! is_array($row) || ! is_string($row['slug'] ?? null)) {
+            $slug = is_array($row) ? $this->slug($row['slug'] ?? null) : '';
+            $parentSlug = is_array($row) ? $this->slug($row['parent_slug'] ?? null) : '';
+            if ($slug === '' || $parentSlug === '') {
                 continue;
             }
 
-            $parentSlug = $row['parent_slug'] ?? null;
-            if (! is_string($parentSlug) || $parentSlug === '') {
-                continue;
-            }
-
-            $child = Category::query()->where('slug', $row['slug'])->first();
+            $child = Category::query()->where('slug', $slug)->first();
             $parent = Category::query()->where('slug', $parentSlug)->first();
             if ($child !== null && $parent !== null && $child->getKey() !== $parent->getKey()) {
                 $child->update(['parent_id' => $parent->getKey()]);
@@ -175,13 +174,14 @@ class BlogArchive
         $count = 0;
 
         foreach ($rows as $row) {
-            if (! is_array($row) || ! is_string($row['slug'] ?? null) || $row['slug'] === '') {
+            $slug = is_array($row) ? $this->slug($row['slug'] ?? null) : '';
+            if ($slug === '') {
                 continue;
             }
 
             Tag::query()->updateOrCreate(
-                ['slug' => $row['slug']],
-                ['name' => (string) ($row['name'] ?? $row['slug'])],
+                ['slug' => $slug],
+                ['name' => (string) ($row['name'] ?? $slug)],
             );
             $count++;
         }
@@ -195,14 +195,15 @@ class BlogArchive
     private function importSeries(array $rows): void
     {
         foreach ($rows as $row) {
-            if (! is_array($row) || ! is_string($row['slug'] ?? null) || $row['slug'] === '') {
+            $slug = is_array($row) ? $this->slug($row['slug'] ?? null) : '';
+            if ($slug === '') {
                 continue;
             }
 
             Series::query()->updateOrCreate(
-                ['slug' => $row['slug']],
+                ['slug' => $slug],
                 [
-                    'title' => (string) ($row['title'] ?? $row['slug']),
+                    'title' => (string) ($row['title'] ?? $slug),
                     'description' => is_string($row['description'] ?? null) ? $row['description'] : null,
                 ],
             );
@@ -217,14 +218,15 @@ class BlogArchive
         $count = 0;
 
         foreach ($rows as $row) {
-            if (! is_array($row) || ! is_string($row['slug'] ?? null) || $row['slug'] === '') {
+            $slug = is_array($row) ? $this->slug($row['slug'] ?? null) : '';
+            if ($slug === '') {
                 continue;
             }
 
             $post = Post::query()->updateOrCreate(
-                ['slug' => $row['slug']],
+                ['slug' => $slug],
                 [
-                    'title' => (string) ($row['title'] ?? $row['slug']),
+                    'title' => (string) ($row['title'] ?? $slug),
                     'locale' => is_string($row['locale'] ?? null) && $row['locale'] !== '' ? $row['locale'] : (string) config('blog.locales.default', 'en'),
                     'translation_group' => is_string($row['translation_group'] ?? null) && $row['translation_group'] !== '' ? $row['translation_group'] : null,
                     'excerpt' => is_string($row['excerpt'] ?? null) ? $row['excerpt'] : null,
@@ -254,7 +256,8 @@ class BlogArchive
 
     private function categoryId(mixed $slug): ?int
     {
-        if (! is_string($slug) || $slug === '') {
+        $slug = $this->slug($slug);
+        if ($slug === '') {
             return null;
         }
 
@@ -263,11 +266,26 @@ class BlogArchive
 
     private function seriesId(mixed $slug): ?int
     {
-        if (! is_string($slug) || $slug === '') {
+        $slug = $this->slug($slug);
+        if ($slug === '') {
             return null;
         }
 
         return Series::query()->where('slug', $slug)->value('id');
+    }
+
+    /**
+     * A bundle slug as a URL-safe token, or '' when nothing usable is left.
+     *
+     * Slugs land in public hrefs and in the post page's canonical-path check,
+     * both of which rely on a slug being [a-z0-9-] only — a crafted bundle
+     * must not be able to store `<`, `"`, `/` or `..` in one. Str::slug is
+     * what SlugGenerator applies on every other write path, so a bundle this
+     * install exported round-trips unchanged.
+     */
+    private function slug(mixed $value): string
+    {
+        return is_string($value) ? Str::slug($value) : '';
     }
 
     private function authorId(mixed $email): ?string
@@ -292,7 +310,8 @@ class BlogArchive
         $ids = [];
 
         foreach ($slugs as $slug) {
-            if (! is_string($slug) || $slug === '') {
+            $slug = $this->slug($slug);
+            if ($slug === '') {
                 continue;
             }
 

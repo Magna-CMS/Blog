@@ -123,7 +123,11 @@ class WxrImporter
                 continue;
             }
 
-            $slug = $this->text($wp->post_name);
+            // WordPress stores a non-ASCII post_name percent-encoded; decode it
+            // so Str::slug transliterates the words rather than the escapes.
+            // BlogArchive::import() normalises again — this keeps the bundle
+            // itself honest for anything else that reads it.
+            $slug = Str::slug(rawurldecode($this->text($wp->post_name)));
             $title = $this->text($item->title);
             if ($slug === '') {
                 $slug = Str::slug($title !== '' ? $title : 'post-'.$this->text($wp->post_id));

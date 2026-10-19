@@ -100,6 +100,22 @@ it('skips pages and trashed items', function (): void {
     expect($slugs)->toBe(['hello-wxr']);
 });
 
+it('normalises a hostile or percent-encoded post_name into a url-safe slug', function (): void {
+    $xml = str_replace(
+        '<wp:post_name>hello-wxr</wp:post_name>',
+        '<wp:post_name><![CDATA[../"><script>x</script>]]></wp:post_name>',
+        sampleWxr(),
+    );
+    $encoded = str_replace(
+        '<wp:post_name>hello-wxr</wp:post_name>',
+        '<wp:post_name>caf%c3%a9-cr%c3%a8me</wp:post_name>',
+        sampleWxr(),
+    );
+
+    expect(collect(app(WxrImporter::class)->toBundle($xml)['posts'])->pluck('slug')->all())->toBe(['scriptxscript'])
+        ->and(collect(app(WxrImporter::class)->toBundle($encoded)['posts'])->pluck('slug')->all())->toBe(['cafe-creme']);
+});
+
 it('rejects a non-WXR file', function (): void {
     expect(fn () => app(WxrImporter::class)->toBundle('<html><body>not wxr</body></html>'))
         ->toThrow(InvalidArgumentException::class);

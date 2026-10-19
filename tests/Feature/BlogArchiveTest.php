@@ -151,3 +151,32 @@ it('sanitises imported content and never exports the password hash', function ()
     $body = Post::query()->where('slug', 'guarded')->firstOrFail()->content['blocks'][0]['data']['text'];
     expect($body)->not->toContain('<script>');
 });
+
+it('stores only url-safe slugs from a hostile bundle', function (): void {
+    // Slugs become public hrefs and feed the post page's canonical-path
+    // check; a crafted bundle must not smuggle markup or path segments in.
+    app(BlogArchive::class)->import([
+        'schema' => BlogArchive::SCHEMA,
+        'categories' => [['name' => 'Evil', 'slug' => '../Evil"><b>']],
+        'tags' => [['name' => 'T', 'slug' => 'a/b']],
+        'posts' => [
+            [
+                'title' => 'Hostile', 'slug' => '"><script>alert(1)</script>/../x',
+                'category_slug' => '../Evil"><b>', 'tags' => ['a/b', '<i>'],
+            ],
+            ['title' => 'Nothing left', 'slug' => '"<>/'],
+        ],
+    ]);
+
+    $slugs = Post::query()->pluck('slug')->all();
+
+    // The slug that cleans down to nothing is skipped, not stored empty.
+    expect($slugs)->toBe(['scriptalert1scriptx'])
+        ->and(Category::query()->where('name', 'Evil')->value('slug'))->toBe('evilb')
+        ->and(Post::query()->firstOrFail()->category?->slug)->toBe('evilb')
+        ->and(Tag::query()->pluck('slug')->sort()->values()->all())->toBe(['ab', 'i']);
+
+    foreach ([...$slugs, ...Category::query()->pluck('slug')->all(), ...Tag::query()->pluck('slug')->all()] as $slug) {
+        expect($slug)->toMatch('/^[a-z0-9-]+$/');
+    }
+});
