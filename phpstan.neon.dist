@@ -1,0 +1,40 @@
+# Static analysis for this plugin.
+#
+# The CMS's own phpstan.neon analyses core, never plugins-dev — so a plugin
+# only gets analysed if it carries its own config. Run from the CMS root,
+# which is where the autoloader and larastan live:
+#
+#   php bin/plugin-gates.php magna/blog
+#
+# The level is a ratchet: raise it when the code allows, never lower it,
+# and never add a baseline — errors get fixed, not filed.
+includes:
+    - ../../../vendor/larastan/larastan/extension.neon
+
+parameters:
+    # Probed 2026-10-19 when the quality kit was adopted. Floor pinned in
+    # core's PluginArchitectureTest; ratchet upward only.
+    level: 8
+
+    # Per-checkout cache, like core's phpstan.neon.dist and the pages kit.
+    tmpDir: build/phpstan
+
+    paths:
+        - src
+
+    bootstrapFiles:
+        - ../../../vendor/autoload.php
+
+    # Shrink-only debt, pinned by core's PluginArchitectureTest -- an entry
+    # may leave this list, never join it.
+    #
+    # BlogSeoSource + PostSeoMeta: the bridge to the optional SEO plugin.
+    # BlogSeoSource implements magna/seo's SeoSubjectSource and PostSeoMeta
+    # instantiates it; both are only ever loaded when that plugin is
+    # installed (class_exists / container-bound guards). Its types are not on
+    # the analyser's autoloader unless magna/seo's source is present, so
+    # reflection dies on the missing interface; PostSeoTest exercises both
+    # wherever SEO is installed.
+    excludePaths:
+        - src/Seo/BlogSeoSource.php
+        - src/Seo/PostSeoMeta.php

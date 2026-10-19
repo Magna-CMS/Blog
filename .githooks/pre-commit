@@ -1,0 +1,59 @@
+#!/bin/sh
+# Pre-commit gate for this plugin, run through the CMS checkout's toolchain.
+#
+# This repository is developed inside a Magna CMS checkout, at
+# plugins-dev/<vendor>/<package> — pint and phpstan come from the CMS's own
+# vendor/ three levels up, so the plugin is held to exactly the standard of
+# the code it plugs into. On a machine without that arrangement, point the
+# hooks at a PHP with `git config hooks.php /path/to/php` and run the gates
+# by hand.
+#
+# Activate with:  git config core.hooksPath .githooks
+
+set -e
+
+PHP="$(git config hooks.php || true)"
+
+if [ -z "$PHP" ] && command -v php >/dev/null 2>&1; then
+    PHP=php
+fi
+
+if [ -z "$PHP" ]; then
+    for candidate in $(ls -r "$HOME"/.config/herd/bin/php*/php.exe 2>/dev/null); do
+        if [ -x "$candidate" ]; then
+            PHP="$candidate"
+            break
+        fi
+    done
+fi
+
+if [ -z "$PHP" ]; then
+    echo "pre-commit: php not found. Point the hooks at one with:" >&2
+    echo "  git config hooks.php /path/to/php" >&2
+    exit 1
+fi
+
+CORE="../../.."
+
+if [ ! -f "$CORE/vendor/bin/pint" ]; then
+    echo "pre-commit: expected the CMS checkout's vendor/ at $CORE — is this plugin at plugins-dev/<vendor>/<package>?" >&2
+    exit 1
+fi
+
+staged_any_php=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.php$' || true)
+
+if [ -z "$staged_any_php" ]; then
+    exit 0
+fi
+
+echo "pre-commit: pint --test (staged files)"
+# shellcheck disable=SC2086
+"$PHP" "$CORE/vendor/bin/pint" --test $staged_any_php
+
+staged_src=$(printf '%s\n' $staged_any_php | grep -E '^src/' || true)
+
+if [ -n "$staged_src" ] && [ -f phpstan.neon.dist ]; then
+    echo "pre-commit: phpstan (staged src files)"
+    # shellcheck disable=SC2086
+    "$PHP" "$CORE/vendor/bin/phpstan" analyse -c phpstan.neon.dist --no-progress --memory-limit=1G $staged_src
+fi
