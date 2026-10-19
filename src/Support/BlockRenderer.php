@@ -6,6 +6,7 @@ namespace MagnaCms\Blog\Support;
 
 use MagnaCms\Blog\Editor\BlockSchema;
 use MagnaCms\Blog\Editor\EmbedHosts;
+use MagnaCms\Blog\Editor\LinkUrl;
 
 /**
  * Renders an already-sanitised Editor.js block document to HTML — for the
@@ -226,22 +227,10 @@ final class BlockRenderer
             .'<div class="magna-blog-p__text">'.$text.'</div>'.$media.$label.'</div>';
     }
 
-    /**
-     * Re-validate a stored URL for output (defence in depth). `/\host` is
-     * refused with `//host`: browsers read both as protocol-relative.
-     */
+    /** Re-validate a stored URL for output (defence in depth). */
     private function cleanUrlOut(mixed $value): string
     {
-        $url = is_string($value) ? trim($value) : '';
-        if ($url === '') {
-            return '';
-        }
-        if (str_starts_with($url, '/') && ! str_starts_with($url, '//') && ! str_starts_with($url, '/\\')) {
-            return $url;
-        }
-        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
-
-        return in_array($scheme, ['http', 'https'], true) ? $url : '';
+        return LinkUrl::clean($value);
     }
 
     /**

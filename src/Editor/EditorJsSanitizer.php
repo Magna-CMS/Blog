@@ -738,22 +738,7 @@ final class EditorJsSanitizer
 
     private function cleanUrl(mixed $value): string
     {
-        $url = is_string($value) ? trim($value) : '';
-
-        if ($url === '') {
-            return '';
-        }
-
-        // Same-origin root-relative paths (e.g. /storage/…) are safe — but not
-        // protocol-relative (//evil.com, or /\evil.com, which browsers read
-        // the same way) URLs, which are rejected below.
-        if (str_starts_with($url, '/') && ! str_starts_with($url, '//') && ! str_starts_with($url, '/\\')) {
-            return $url;
-        }
-
-        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
-
-        return in_array($scheme, ['http', 'https'], true) ? $url : '';
+        return LinkUrl::clean($value);
     }
 
     /** Spacer height in px (8–160), mapping the legacy small/medium/large names. */
