@@ -127,10 +127,10 @@ class BlogSettingsPage extends Page implements HasForms
                     ]),
 
                 Section::make('Permalinks')
-                    ->description('Stored for future frontend plugins only — no routing is applied here.')
+                    ->description('Where each post\'s public page lives (served through Magna Pages), and the URL every blog link and the sitemap use.')
                     ->schema([
                         TextInput::make('permalink_pattern')
-                            ->helperText('e.g. /blog/{slug}, /{slug}, /blog/{year}/{slug}, /blog/{category}/{slug}'),
+                            ->helperText('e.g. /blog/{slug}, /blog/{year}/{slug}, /blog/{category}/{slug}. Each token must be a whole segment and {slug} is required — otherwise /blog/{slug} is used. Changing it does not redirect old post URLs: add redirects for any already shared.'),
                     ]),
 
                 Section::make('Editor')

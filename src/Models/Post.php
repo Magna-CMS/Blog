@@ -358,7 +358,9 @@ class Post extends Model
             })
             ->orderBy('published_at', $newer ? 'asc' : 'desc')
             ->orderBy('id', $newer ? 'asc' : 'desc')
-            ->first(['id', 'title', 'slug']);
+            // Beyond id/title/slug: the columns a permalink pattern's date
+            // and category tokens read, so a neighbour can be linked.
+            ->first(['id', 'title', 'slug', 'published_at', 'created_at', 'category_id']);
     }
 
     /** Concatenated searchable text (title + excerpt + flattened blocks). */

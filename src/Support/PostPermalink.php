@@ -11,12 +11,11 @@ use MagnaCms\Blog\Settings\BlogSettings;
 /**
  * Builds a post's public path from the configured permalink pattern.
  *
- * The pattern (BlogSettings::$permalink_pattern) was stored as "a hint for
- * future frontend plugins" and never had an implementation, because the blog
- * is headless — it serves JSON and mounts no public routes. The Loop data
- * source is the first consumer that must turn a post into a link, so the
- * pattern gets ONE authoritative reader here rather than an inline
- * str_replace at each future call site.
+ * The pattern (BlogSettings::$permalink_pattern) is the ONE authoritative
+ * description of a post's URL: the links the blog emits (Loop source,
+ * related posts, prev/next, sitemap) and the path the public post page is
+ * mounted at (PostFrontendPage) are both read from it here, so what the site
+ * links to is what it serves.
  *
  * Supported tokens are the ones the settings screen advertises: {slug},
  * {year}, {month}, {day}, {category}. Anything else in the pattern is
@@ -25,11 +24,82 @@ use MagnaCms\Blog\Settings\BlogSettings;
  */
 final class PostPermalink
 {
+    public const DEFAULT_PATTERN = '/blog/{slug}';
+
+    private const TOKENS = ['slug', 'year', 'month', 'day', 'category'];
+
     public function __construct(private readonly string $pattern) {}
 
+    /**
+     * The configured pattern, or the default when the post page could not be
+     * served at it (see routePath()) — links and the mounted page then
+     * still agree, instead of every link pointing at a 404.
+     */
     public static function fromSettings(): self
     {
-        return new self(BlogSettings::get()->permalink_pattern);
+        $configured = new self(BlogSettings::get()->permalink_pattern);
+
+        return $configured->routePath() !== null ? $configured : new self(self::DEFAULT_PATTERN);
+    }
+
+    /**
+     * The pattern as a frontend-page path (`blog/{slug}`), or null when the
+     * page router cannot serve it: no {slug}, an unknown or repeated token,
+     * an empty segment, or a token sharing a segment with text
+     * (`{year}-{slug}`) — the router captures whole segments only.
+     */
+    public function routePath(): ?string
+    {
+        $segments = explode('/', trim($this->pattern, '/'));
+        $tokens = [];
+
+        foreach ($segments as $segment) {
+            if ($segment === '') {
+                return null;
+            }
+            if (! str_contains($segment, '{') && ! str_contains($segment, '}')) {
+                continue;
+            }
+            if (preg_match('/^\{([a-z]+)\}$/', $segment, $match) !== 1
+                || ! in_array($match[1], self::TOKENS, true)
+                || in_array($match[1], $tokens, true)) {
+                return null;
+            }
+            $tokens[] = $match[1];
+        }
+
+        return in_array('slug', $tokens, true) ? implode('/', $segments) : null;
+    }
+
+    /** The literal start of the pattern, up to its first token (`/blog/`). */
+    public function staticPrefix(): string
+    {
+        $prefix = strstr($this->pattern, '{', true);
+
+        return '/'.ltrim($prefix === false ? $this->pattern : $prefix, '/');
+    }
+
+    /**
+     * The path a request for these route parameters asked for, in the same
+     * shape for() produces — so the post page can refuse any path that is
+     * not the post's canonical one.
+     *
+     * @param  array<string, string>  $params
+     */
+    public function pathFromParams(array $params): string
+    {
+        $replacements = [];
+        foreach (self::TOKENS as $token) {
+            $value = $params[$token] ?? '';
+            // normalise() strips brace runs, so `{x}2026` would otherwise
+            // collapse onto `2026` and serve an alias of the canonical URL.
+            if (strpbrk($value, '{}/') !== false) {
+                return '';
+            }
+            $replacements['{'.$token.'}'] = $value;
+        }
+
+        return $this->normalise(strtr($this->pattern, $replacements));
     }
 
     /**
@@ -66,6 +136,11 @@ final class PostPermalink
             '{category}' => $this->usesCategory() ? $this->categorySlug($post) : '',
         ]);
 
+        return $this->normalise($path);
+    }
+
+    private function normalise(string $path): string
+    {
         // Unknown tokens, and known ones that resolved to nothing, leave
         // empty segments behind — collapse them so the path stays walkable.
         $path = (string) preg_replace('/\{[^}]*\}/', '', $path);

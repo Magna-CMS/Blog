@@ -33,6 +33,7 @@ use MagnaCms\Blog\Models\Tag;
 use MagnaCms\Blog\Seo\PostSeoMeta;
 use MagnaCms\Blog\Settings\BlogSettings;
 use MagnaCms\Blog\Support\Locales;
+use MagnaCms\Blog\Support\PostPermalink;
 use MagnaCms\Blog\Support\SlugGenerator;
 
 /**
@@ -248,7 +249,7 @@ trait EditsPostInBuilder
                     ->schema([
                         TextInput::make('slug')
                             ->hiddenLabel()
-                            ->prefix('/blog/')
+                            ->prefix(fn (): string => PostPermalink::fromSettings()->staticPrefix())
                             ->placeholder('post-slug')
                             ->helperText('Auto-generated from the title; uniqueness is enforced on save.'),
                     ]),

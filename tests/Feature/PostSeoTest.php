@@ -19,6 +19,7 @@ use MagnaCms\Blog\Filament\Resources\PostResource\Pages\EditPost;
 use MagnaCms\Blog\Models\Post;
 use MagnaCms\Blog\Seo\BlogSeoSource;
 use MagnaCms\Blog\Seo\PostSeoMeta;
+use MagnaCms\Blog\Settings\BlogSettings;
 
 uses(PluginTestCase::class);
 
@@ -86,6 +87,21 @@ it('maps a live public post to an SEO subject', function (): void {
         ->and($subject->indexable)->toBeTrue()
         ->and($subject->title)->toBe('Hello World')
         ->and($subject->excerpt)->toBe('A short intro.');
+});
+
+it('builds sitemap urls from the configured permalink pattern, translations included', function (): void {
+    $settings = BlogSettings::get();
+    $settings->permalink_pattern = '/news/{year}/{slug}';
+    $settings->save();
+
+    livePost(['translation_group' => 'g1', 'published_at' => now()->setDate(2026, 3, 1)]);
+    livePost(['slug' => 'hallo-welt', 'locale' => 'de', 'translation_group' => 'g1', 'published_at' => now()->setDate(2025, 3, 1)]);
+
+    $subject = app(BlogSeoSource::class)->resolve('hello-world');
+
+    // The URL the post page is served at, not a hard-coded /blog/{slug}.
+    expect($subject->url)->toEndWith('/news/2026/hello-world')
+        ->and($subject->alternates['de'])->toEndWith('/news/2025/hallo-welt');
 });
 
 it('does not resolve a draft post as an SEO subject', function (): void {

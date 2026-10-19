@@ -7,9 +7,9 @@ namespace MagnaCms\Blog\Settings;
 use Magna\Settings\Settings;
 
 /**
- * Backend/content settings for the Blog plugin. Frontend concerns (SEO, themes,
- * routing) are deliberately excluded — the permalink pattern is stored only as a
- * hint for future frontend plugins.
+ * Backend/content settings for the Blog plugin. Frontend concerns (SEO, themes)
+ * are deliberately excluded; the one routing value is the permalink pattern,
+ * which PostPermalink reads for both post links and the public post page.
  */
 class BlogSettings extends Settings
 {
@@ -34,7 +34,7 @@ class BlogSettings extends Settings
 
     public bool $allow_manual_slug = true;
 
-    // Permalinks — stored for future frontend plugins; no routing here.
+    // Permalinks — read only through PostPermalink (links + the post page path).
     public string $permalink_pattern = '/blog/{slug}';
 
     // Editor

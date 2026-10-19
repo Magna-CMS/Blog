@@ -7,6 +7,7 @@ namespace MagnaCms\Blog\Http\Resources;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use MagnaCms\Blog\Models\Post;
+use MagnaCms\Blog\Support\PostPermalink;
 
 /**
  * Fills the "dynamic" blocks (table of contents, related posts, post excerpt,
@@ -37,10 +38,12 @@ final class DynamicBlockResolver
             $data = is_array($block['data'] ?? null) ? $block['data'] : [];
 
             $document['blocks'][$index]['data'] = match ($type) {
-                'toc' => [
+                // Merged, not replaced: the stored title/ordered settings must
+                // still reach the renderer beside the resolved items.
+                'toc' => array_merge($data, [
                     'depth' => (int) ($data['depth'] ?? 3),
                     'items' => $this->tocItems($headings, (int) ($data['depth'] ?? 3)),
-                ],
+                ]),
                 'postExcerpt' => ['text' => (string) $post->excerpt],
                 'featuredImage' => ['url' => $this->imageUrl($post->featured_image)],
                 'relatedPosts' => array_merge($data, ['posts' => $this->related($post, $data)]),
@@ -115,13 +118,28 @@ final class DynamicBlockResolver
             $query->where('category_id', $post->category_id);
         }
 
+        $permalink = PostPermalink::fromSettings();
+        if ($permalink->usesCategory()) {
+            $query->with('category:id,slug');
+        }
+
+        $columns = ['id', 'title', 'slug', 'excerpt', 'featured_image', 'published_at', 'created_at', 'category_id'];
+
+        /*
+         * `url` and `image` are what BlockRenderer reads; `slug` and
+         * `featured_image` are what the delivery API has always returned.
+         * Both pairs stay — the API's consumers must not lose a key.
+         */
         $posts = [];
-        foreach ($query->orderByDesc('published_at')->limit($count)->get(['id', 'title', 'slug', 'excerpt', 'featured_image']) as $related) {
+        foreach ($query->orderByDesc('published_at')->limit($count)->get($columns) as $related) {
+            $image = $this->imageUrl($related->featured_image);
             $posts[] = [
                 'title' => $related->title,
                 'slug' => $related->slug,
                 'excerpt' => $related->excerpt,
-                'featured_image' => $this->imageUrl($related->featured_image),
+                'featured_image' => $image,
+                'url' => $permalink->for($related),
+                'image' => $image,
             ];
         }
 
