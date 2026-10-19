@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MagnaCms\Blog\Tests\Unit;
 
 use MagnaCms\Blog\Support\BlockRenderer;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class BlockRendererTest extends TestCase
@@ -620,6 +621,96 @@ final class BlockRendererTest extends TestCase
         $this->assertSame('', $this->renderer->render(['blocks' => [
             ['type' => 'link', 'data' => ['link' => '', 'text' => 'nope']],
         ]]));
+    }
+
+    /**
+     * HTML-escaping a quote gives `&#039;`, which the browser decodes back
+     * to `'` before CSS parses the style attribute — so a URL with a quote
+     * or paren could close url() and append declarations of its own.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function hostileCssUrls(): array
+    {
+        return [
+            'single quote' => ["https://cdn.test/a.jpg');position:fixed;inset:0;background:url('https://evil.test/x"],
+            'closing paren' => ['https://cdn.test/a.jpg);position:fixed;inset:0'],
+            'double quote' => ['https://cdn.test/a.jpg");color:red'],
+            'backslash escape' => ['https://cdn.test/a.jpg\\27);color:red'],
+            'whitespace' => ["https://cdn.test/a.jpg\n);color:red"],
+            'non-http scheme' => ['javascript:alert(1)'],
+        ];
+    }
+
+    #[DataProvider('hostileCssUrls')]
+    public function test_a_hostile_cover_url_cannot_escape_the_css_url(string $url): void
+    {
+        $html = $this->renderer->render(['blocks' => [
+            ['type' => 'cover', 'data' => ['url' => $url, 'title' => 'Hi']],
+        ]]);
+
+        $this->assertStringNotContainsString('background-image', $html);
+        $this->assertStringNotContainsString('position:fixed', $html);
+        $this->assertStringNotContainsString('color:red', $html);
+        $this->assertStringContainsString('<h2>Hi</h2>', $html);
+    }
+
+    #[DataProvider('hostileCssUrls')]
+    public function test_a_hostile_link_card_image_cannot_escape_the_css_url(string $url): void
+    {
+        $html = $this->renderer->render(['blocks' => [
+            ['type' => 'link', 'data' => [
+                'link' => 'https://example.test/post',
+                'meta' => ['title' => 'Card', 'image' => ['url' => $url]],
+            ]],
+        ]]);
+
+        $this->assertStringContainsString('class="link-card"', $html);
+        $this->assertStringNotContainsString('link-card__img', $html);
+        $this->assertStringNotContainsString('position:fixed', $html);
+        $this->assertStringNotContainsString('color:red', $html);
+    }
+
+    public function test_a_safe_cover_url_is_quoted_inside_css_url(): void
+    {
+        $html = $this->renderer->render(['blocks' => [
+            ['type' => 'cover', 'data' => ['url' => '/storage/blog/bg.jpg?v=1&w=2']],
+        ]]);
+
+        $this->assertStringContainsString("url('/storage/blog/bg.jpg?v=1&amp;w=2')", $html);
+    }
+
+    public function test_hrefs_are_rechecked_at_render_time(): void
+    {
+        $html = $this->renderer->render(['blocks' => [
+            ['type' => 'image', 'data' => ['url' => 'https://cdn.test/a.jpg', 'linkUrl' => 'javascript:alert(1)']],
+            ['type' => 'buttons', 'data' => ['buttons' => [
+                ['label' => 'Bad', 'url' => 'javascript:alert(2)'],
+                ['label' => 'Sneaky', 'url' => '/\\evil.test'],
+                ['label' => 'Good', 'url' => '/about'],
+            ]]],
+            ['type' => 'cta', 'data' => ['title' => 'T', 'buttonUrl' => 'data:text/html,x', 'buttonLabel' => 'CTA']],
+        ]]);
+
+        $this->assertStringNotContainsString('javascript:', $html);
+        $this->assertStringNotContainsString('data:text', $html);
+        $this->assertStringNotContainsString('evil.test', $html);
+        $this->assertStringNotContainsString('>Bad<', $html);
+        $this->assertStringNotContainsString('>CTA<', $html);
+        $this->assertStringContainsString('href="/about"', $html);
+        $this->assertStringContainsString('<img src="https://cdn.test/a.jpg"', $html);
+    }
+
+    public function test_an_embed_outside_the_host_allowlist_renders_nothing(): void
+    {
+        $render = fn (string $embed): string => $this->renderer->render(['blocks' => [
+            ['type' => 'embed', 'data' => ['embed' => $embed]],
+        ]]);
+
+        $this->assertSame('', $render('https://evil.test/frame'));
+        $this->assertSame('', $render('javascript:alert(1)'));
+        $this->assertSame('', $render('https://youtube.com.evil.test/embed/x'));
+        $this->assertStringContainsString('src="https://www.youtube.com/embed/abc"', $render('https://www.youtube.com/embed/abc'));
     }
 
     public function test_unknown_blocks_render_nothing(): void

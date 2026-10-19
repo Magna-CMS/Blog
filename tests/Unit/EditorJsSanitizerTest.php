@@ -70,6 +70,31 @@ final class EditorJsSanitizerTest extends TestCase
         $this->assertStringNotContainsString('javascript:', $text);
     }
 
+    public function test_the_raw_block_drops_ids_srcset_and_data_images(): void
+    {
+        $out = $this->sanitizer->sanitize(['blocks' => [
+            ['type' => 'raw', 'data' => ['html' => '<div id="config"><img src="https://cdn.test/a.jpg" srcset="javascript:alert(1) 1x">'
+                .'<img src="data:image/svg+xml;base64,PHN2Zz4=" alt="d"><p id="x">kept</p></div>']],
+        ]]);
+
+        $html = $out['blocks'][0]['data']['html'];
+        $this->assertStringContainsString('src="https://cdn.test/a.jpg"', $html);
+        $this->assertStringContainsString('kept', $html);
+        $this->assertStringNotContainsString('id=', $html);
+        $this->assertStringNotContainsString('srcset', $html);
+        $this->assertStringNotContainsString('data:image', $html);
+    }
+
+    public function test_a_backslash_protocol_relative_url_is_rejected(): void
+    {
+        $out = $this->sanitizer->sanitize(['blocks' => [
+            ['type' => 'image', 'data' => ['url' => '/storage/a.jpg', 'linkUrl' => '/\\evil.test']],
+        ]]);
+
+        $this->assertSame('/storage/a.jpg', $out['blocks'][0]['data']['url']);
+        $this->assertSame('', $out['blocks'][0]['data']['linkUrl']);
+    }
+
     public function test_it_drops_unknown_block_types(): void
     {
         $out = $this->sanitizer->sanitize(['blocks' => [

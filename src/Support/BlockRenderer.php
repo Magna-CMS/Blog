@@ -5,12 +5,17 @@ declare(strict_types=1);
 namespace MagnaCms\Blog\Support;
 
 use MagnaCms\Blog\Editor\BlockSchema;
+use MagnaCms\Blog\Editor\EmbedHosts;
 
 /**
- * Renders a (already-sanitised) Editor.js block document to HTML for the admin
- * preview. Text fields hold sanitiser-approved inline HTML and are emitted as-is;
- * every URL/attribute and plain-text value is escaped here. This is a preview
- * aid, not the production frontend renderer.
+ * Renders an already-sanitised Editor.js block document to HTML — for the
+ * admin preview AND the public post page, so it is a production renderer.
+ *
+ * Trust boundary: sanitise at save, escape at render. Text fields and `raw`
+ * blocks hold EditorJsSanitizer-approved HTML and are emitted as stored —
+ * every write path to blog_posts.content runs that sanitiser, and anything
+ * else handing a document here must sanitise first (see FaqBlockResolver).
+ * URLs are re-checked and every attribute and plain-text value is escaped.
  */
 final class BlockRenderer
 {
@@ -221,19 +226,38 @@ final class BlockRenderer
             .'<div class="magna-blog-p__text">'.$text.'</div>'.$media.$label.'</div>';
     }
 
-    /** Re-validate a stored URL for output (defence in depth). */
+    /**
+     * Re-validate a stored URL for output (defence in depth). `/\host` is
+     * refused with `//host`: browsers read both as protocol-relative.
+     */
     private function cleanUrlOut(mixed $value): string
     {
         $url = is_string($value) ? trim($value) : '';
         if ($url === '') {
             return '';
         }
-        if (str_starts_with($url, '/') && ! str_starts_with($url, '//')) {
+        if (str_starts_with($url, '/') && ! str_starts_with($url, '//') && ! str_starts_with($url, '/\\')) {
             return $url;
         }
         $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
 
         return in_array($scheme, ['http', 'https'], true) ? $url : '';
+    }
+
+    /**
+     * A URL safe inside CSS `url('…')` in a style attribute, or ''.
+     *
+     * HTML-escaping is not CSS-escaping: the browser decodes `&#039;` back to
+     * `'` before the CSS parser runs, so a quote, paren, backslash or
+     * whitespace in a stored URL could close url() and append declarations
+     * of its own. Such URLs are refused, not escaped — an image URL never
+     * needs those characters unencoded.
+     */
+    private function cssUrl(mixed $value): string
+    {
+        $url = $this->cleanUrlOut($value);
+
+        return preg_match('/[\s"\'()\\\\]/', $url) === 1 ? '' : $url;
     }
 
     /** @param array<string, mixed> $d */
@@ -341,8 +365,9 @@ final class BlockRenderer
         }
         $img = '<img src="'.$this->esc($d['url']).'" alt="'.$this->esc($d['alt'] ?? '').'" style="'.$imgCss.'">';
 
-        if (($d['linkUrl'] ?? '') !== '') {
-            $img = '<a href="'.$this->esc($d['linkUrl']).'">'.$img.'</a>';
+        $link = $this->cleanUrlOut($d['linkUrl'] ?? '');
+        if ($link !== '') {
+            $img = '<a href="'.$this->esc($link).'">'.$img.'</a>';
         }
 
         $figCss = match ($d['align'] ?? '') {
@@ -393,8 +418,9 @@ final class BlockRenderer
         $justify = ['left' => 'flex-start', 'center' => 'center', 'right' => 'flex-end'][$align];
 
         $css = 'min-height:'.$height.';text-align:'.$align.';align-items:'.$justify;
-        if (($d['url'] ?? '') !== '') {
-            $css .= ';background-image:linear-gradient(rgba(0,0,0,'.$overlay.'),rgba(0,0,0,'.$overlay.')),url('.$this->esc($d['url']).')';
+        $image = $this->cssUrl($d['url'] ?? '');
+        if ($image !== '') {
+            $css .= ';background-image:linear-gradient(rgba(0,0,0,'.$overlay.'),rgba(0,0,0,'.$overlay.')),url(\''.$this->esc($image).'\')';
         }
 
         return '<div class="cover" style="'.$css.'"><h2>'.$this->esc($d['title'] ?? '').'</h2><div>'.$this->html($d['text'] ?? '').'</div></div>';
@@ -432,11 +458,12 @@ final class BlockRenderer
     /** @param array<string, mixed> $d */
     private function embed(array $d): string
     {
-        if (($d['embed'] ?? '') === '') {
+        $src = $this->cleanUrlOut($d['embed'] ?? '');
+        if ($src === '' || ! EmbedHosts::allows($src)) {
             return '';
         }
 
-        return '<div class="embed"><iframe src="'.$this->esc($d['embed']).'" frameborder="0" allowfullscreen loading="lazy"></iframe></div>';
+        return '<div class="embed"><iframe src="'.$this->esc($src).'" frameborder="0" allowfullscreen loading="lazy"></iframe></div>';
     }
 
     /** @param array<string, mixed> $d */
@@ -477,13 +504,14 @@ final class BlockRenderer
         }
 
         $button = '';
-        if (($d['buttonUrl'] ?? '') !== '') {
+        $href = $this->cleanUrlOut($d['buttonUrl'] ?? '');
+        if ($href !== '') {
             $color = $this->hex($d['buttonColor'] ?? '', '#6366f1');
             $outline = ($d['buttonType'] ?? 'filled') === 'outline';
             $btnCss = 'border:1.5px solid '.$color.($outline
                 ? ';background:transparent;color:'.$color
                 : ';background:'.$color.';color:#fff');
-            $button = '<a class="btn" href="'.$this->esc($d['buttonUrl']).'" style="'.$btnCss.'">'.$this->esc($d['buttonLabel'] ?? 'Learn more').'</a>';
+            $button = '<a class="btn" href="'.$this->esc($href).'" style="'.$btnCss.'">'.$this->esc($d['buttonLabel'] ?? 'Learn more').'</a>';
         }
 
         return '<div class="cta" style="'.$this->esc($boxStyle).'"><h3>'.$this->esc($d['title'] ?? '').'</h3><div>'.$this->html($d['text'] ?? '').'</div>'.$button.'</div>';
@@ -506,7 +534,7 @@ final class BlockRenderer
             .'justify-content:'.$justify.';gap:'.$gap.'px">';
 
         foreach ($buttons as $button) {
-            if (is_array($button) && ($button['url'] ?? '') !== '') {
+            if (is_array($button) && $this->cleanUrlOut($button['url'] ?? '') !== '') {
                 $out .= $this->button($button);
             }
         }
@@ -565,7 +593,7 @@ final class BlockRenderer
         if (($b['nofollow'] ?? false)) {
             $rel[] = 'nofollow';
         }
-        $attrs = ' href="'.$this->esc($b['url']).'"';
+        $attrs = ' href="'.$this->esc($this->cleanUrlOut($b['url'] ?? '')).'"';
         if (($b['newTab'] ?? false)) {
             $attrs .= ' target="_blank"';
         }
@@ -798,7 +826,7 @@ final class BlockRenderer
         $image = is_array($meta['image'] ?? null) ? $meta['image'] : [];
         $title = $this->plain($meta['title'] ?? '');
         $desc = $this->plain($meta['description'] ?? '');
-        $img = $this->cleanUrlOut($image['url'] ?? '');
+        $img = $this->cssUrl($image['url'] ?? '');
         $text = $this->plain($d['text'] ?? '');
 
         // rel: noopener is always safe; add nofollow when asked. target=_blank

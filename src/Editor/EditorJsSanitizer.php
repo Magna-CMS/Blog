@@ -51,7 +51,13 @@ final class EditorJsSanitizer
             (new HtmlSanitizerConfig)
                 ->allowSafeElements()
                 ->allowLinkSchemes(['https', 'http', 'mailto'])
-                ->allowRelativeLinks(false),
+                ->allowRelativeLinks(false)
+                // No data: images, no id (DOM clobbering of page scripts),
+                // and no srcset — its URLs are never scheme-checked.
+                ->allowMediaSchemes(['https', 'http'])
+                ->dropAttribute('id', '*')
+                ->dropAttribute('srcset', '*')
+                ->dropAttribute('imagesrcset', '*'),
         );
 
         $config = (new HtmlSanitizerConfig)
@@ -739,8 +745,9 @@ final class EditorJsSanitizer
         }
 
         // Same-origin root-relative paths (e.g. /storage/…) are safe — but not
-        // protocol-relative (//evil.com) URLs, which are rejected below.
-        if (str_starts_with($url, '/') && ! str_starts_with($url, '//')) {
+        // protocol-relative (//evil.com, or /\evil.com, which browsers read
+        // the same way) URLs, which are rejected below.
+        if (str_starts_with($url, '/') && ! str_starts_with($url, '//') && ! str_starts_with($url, '/\\')) {
             return $url;
         }
 
