@@ -84,7 +84,7 @@ final class PostPermalink
      * shape for() produces — so the post page can refuse any path that is
      * not the post's canonical one.
      *
-     * @param  array<string, string>  $params
+     * @param  array<string, mixed>  $params
      */
     public function pathFromParams(array $params): string
     {
@@ -93,7 +93,7 @@ final class PostPermalink
             $value = $params[$token] ?? '';
             // normalise() strips brace runs, so `{x}2026` would otherwise
             // collapse onto `2026` and serve an alias of the canonical URL.
-            if (strpbrk($value, '{}/') !== false) {
+            if (! is_string($value) || strpbrk($value, '{}/') !== false) {
                 return '';
             }
             $replacements['{'.$token.'}'] = $value;

@@ -13,12 +13,14 @@ use Magna\Blocks\BlockDefinition;
 use Magna\Blocks\DataSources\DataSource;
 use Magna\Blocks\Resolution\BlockDataResolver;
 use Magna\Contracts\HandlesPersonalData;
+use Magna\Contracts\ProvidesFrontendPages;
 use Magna\Contracts\RegistersAdminResources;
 use Magna\Contracts\RegistersBlocks;
 use Magna\Contracts\RegistersCommands;
 use Magna\Contracts\RegistersDataSources;
 use Magna\Contracts\RegistersSettingsPages;
 use Magna\Contracts\RegistersWebhookEvents;
+use Magna\Frontend\FrontendPage;
 use Magna\Plugins\Plugin;
 use MagnaCms\Blog\Blocks\BlogPostsBlockResolver;
 use MagnaCms\Blog\Blocks\DataSources\PostsSource;
@@ -37,6 +39,7 @@ use MagnaCms\Blog\Filament\Resources\CommentResource;
 use MagnaCms\Blog\Filament\Resources\PostResource;
 use MagnaCms\Blog\Filament\Resources\SeriesResource;
 use MagnaCms\Blog\Filament\Resources\TagResource;
+use MagnaCms\Blog\Frontend\PostFrontendPage;
 use MagnaCms\Blog\Models\Category;
 use MagnaCms\Blog\Models\Post;
 use MagnaCms\Blog\Observers\CategoryObserver;
@@ -51,7 +54,7 @@ use MagnaCms\Blog\Support\Spam\SpamCheck;
 use MagnaCms\Blog\Support\VersionedCss;
 use MagnaCms\Blog\Support\VersionedJs;
 
-class BlogPlugin extends Plugin implements HandlesPersonalData, RegistersAdminResources, RegistersBlocks, RegistersCommands, RegistersDataSources, RegistersSettingsPages, RegistersWebhookEvents
+class BlogPlugin extends Plugin implements HandlesPersonalData, ProvidesFrontendPages, RegistersAdminResources, RegistersBlocks, RegistersCommands, RegistersDataSources, RegistersSettingsPages, RegistersWebhookEvents
 {
     public function register(): void
     {
@@ -219,6 +222,17 @@ class BlogPlugin extends Plugin implements HandlesPersonalData, RegistersAdminRe
             'blog.post.updated',
             'blog.post.deleted',
         ];
+    }
+
+    /**
+     * The public page each post is served at, at the permalink pattern.
+     * Inert without Magna Pages, which is what mounts it.
+     *
+     * @return list<FrontendPage>
+     */
+    public function frontendPages(): array
+    {
+        return [PostFrontendPage::make()];
     }
 
     /**

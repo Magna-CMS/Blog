@@ -5,6 +5,41 @@ All notable changes to Magna Blog are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - Unreleased
+
+Requires Magna 1.6.0 or later.
+
+### Added
+
+- **Public post pages.** With Magna Pages installed, every published, public post is served at its
+  permalink inside the site's layout (header, footer, theme), with its title and description in the
+  page's meta. Drafts, scheduled, private and password-protected posts, unknown slugs and any
+  non-canonical path for a multi-segment pattern get the site's 404. Without Pages the blog stays
+  headless.
+- Stable class hooks on the post page (`post-title`, `post-meta`, `featured`, `post-body`,
+  `post-nav`) for themes to style.
+
+### Changed
+
+- The permalink pattern now drives the post page path, every post link (Loop source, related posts,
+  previous/next), the sitemap and the builder's slug prefix. Each token must be a whole segment and
+  `{slug}` is required; otherwise `/blog/{slug}` is used and a warning is logged. Changing the pattern
+  does not redirect old URLs.
+- Related posts in the delivery payload gain `url` and `image` beside the existing `slug` and
+  `featured_image`.
+
+### Fixed
+
+- The table-of-contents block keeps its title and numbering settings.
+- Related posts render as links.
+
+### Security
+
+- Slugs from JSON bundles and WordPress imports are normalised to `[a-z0-9-]`.
+- Cover and link-card images can no longer inject CSS through a crafted URL.
+- Links, buttons and embeds are re-validated at render time; `/\host` URLs are refused as
+  protocol-relative; the raw HTML block drops `id`, `srcset` and `data:` images.
+
 ## [1.0.0] - 2026-08-17
 
 Initial public release.
