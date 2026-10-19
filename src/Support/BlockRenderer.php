@@ -613,49 +613,10 @@ final class BlockRenderer
         $out .= '</div>';
 
         if ($d['schema'] ?? false) {
-            $out .= $this->faqSchema($items);
+            $out .= FaqSchema::script($items);
         }
 
         return $out;
-    }
-
-    /**
-     * FAQPage JSON-LD for SEO. Answer text is stripped to plain text and the
-     * whole payload is json_encoded with tags hex-escaped, so it cannot break
-     * out of the <script> element.
-     *
-     * @param  array<int, mixed>  $items
-     */
-    private function faqSchema(array $items): string
-    {
-        $entities = [];
-        foreach ($items as $item) {
-            if (! is_array($item)) {
-                continue;
-            }
-            $question = trim(strip_tags((string) ($item['question'] ?? '')));
-            $answer = trim(strip_tags((string) ($item['answer'] ?? '')));
-            if ($question === '' || $answer === '') {
-                continue;
-            }
-            $entities[] = [
-                '@type' => 'Question',
-                'name' => $question,
-                'acceptedAnswer' => ['@type' => 'Answer', 'text' => $answer],
-            ];
-        }
-
-        if ($entities === []) {
-            return '';
-        }
-
-        $json = json_encode([
-            '@context' => 'https://schema.org',
-            '@type' => 'FAQPage',
-            'mainEntity' => $entities,
-        ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
-
-        return '<script type="application/ld+json">'.($json !== false ? $json : '').'</script>';
     }
 
     /** @param array<string, mixed> $d */

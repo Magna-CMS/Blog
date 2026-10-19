@@ -33,23 +33,6 @@ final class EditorJsSanitizer
 
     private const MAX_TABLE_COLS = 50;
 
-    /**
-     * Hosts whose iframes the embed block may reference. Any embed URL outside
-     * this allowlist is dropped — the primary defence against arbitrary iframe
-     * (clickjacking / XSS) injection through the embed block.
-     *
-     * @var list<string>
-     */
-    private const EMBED_HOSTS = [
-        'youtube.com', 'youtube-nocookie.com', 'youtu.be',
-        'vimeo.com', 'player.vimeo.com',
-        'instagram.com', 'twitter.com', 'x.com', 'platform.twitter.com',
-        'facebook.com', 'codepen.io',
-        'open.spotify.com', 'soundcloud.com', 'w.soundcloud.com',
-        'tiktok.com', 'twitch.tv', 'player.twitch.tv',
-        'pinterest.com', 'coub.com',
-    ];
-
     private readonly HtmlSanitizer $html;
 
     /** Broader (but still script-free) profile for the raw HTML block. */
@@ -674,7 +657,9 @@ final class EditorJsSanitizer
     private function cleanEmbed(array $data): array
     {
         $embed = $this->cleanUrl($data['embed'] ?? '');
-        if ($embed !== '' && ! $this->hostAllowed($embed)) {
+        // Any embed URL outside the allowlist is dropped — the primary defence
+        // against arbitrary iframe injection through the embed block.
+        if ($embed !== '' && ! EmbedHosts::allows($embed)) {
             $embed = '';
         }
 
@@ -713,22 +698,6 @@ final class EditorJsSanitizer
         }
 
         return $clean;
-    }
-
-    private function hostAllowed(string $url): bool
-    {
-        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
-        if ($host === '') {
-            return false;
-        }
-
-        foreach (self::EMBED_HOSTS as $allowed) {
-            if ($host === $allowed || str_ends_with($host, '.'.$allowed)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
