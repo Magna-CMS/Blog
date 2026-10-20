@@ -19,10 +19,14 @@ final class ManifestTest extends TestCase
 
         $this->assertNotSame('', $manifest->name);
         $this->assertNotSame('', $manifest->entryClass);
-        // The post page builds a FrontendPage with a data provider, which
-        // core only accepts from 1.6.0 — an older core would fatal on boot.
-        $this->assertTrue($manifest->isCompatibleWith('1.6.0'));
-        $this->assertFalse($manifest->isCompatibleWith('1.5.1'));
+        // Pagination, locale URLs, page caching, redirects and the comment
+        // form build on core's 1.6.2 frontend seams (RenderContext,
+        // CacheCollector, LocaleUrls, the form-token endpoint) — an older
+        // core would fatal on boot or render.
+        $this->assertSame('1.2.0', $manifest->version);
+        $this->assertTrue($manifest->isCompatibleWith('1.6.2'));
+        $this->assertTrue($manifest->isCompatibleWith('1.9.0'));
+        $this->assertFalse($manifest->isCompatibleWith('1.6.1'));
         $this->assertFalse($manifest->isCompatibleWith('2.0.0'));
     }
 }

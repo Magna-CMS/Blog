@@ -103,7 +103,7 @@ General, slugs, permalinks, editor, content and comment options — all in the a
 ## Requirements
 
 - PHP **8.3+**
-- **Magna CMS** 1.6.0 or later (provides Filament, media library, users, permissions, settings,
+- **Magna CMS** 1.6.2 or later (provides Filament, media library, users, permissions, settings,
   revisions, privacy and webhook subsystems)
 - **Magna Pages** — optional, for public post pages
 
@@ -155,9 +155,39 @@ description as the page's meta. For the `/blog` listing, place the **Blog posts*
   site's 404. A Pages page published at the same path wins over the post.
 - **Theming** — themes style the page with CSS: `<article>` sits directly inside
   `.magna-frontend-page--content`, with `.post-title`, `.post-meta` (`.who`, `.dot`), `.featured`,
-  `.post-body` and `.post-nav`.
-- **Limits** — the Blog posts block has no pagination; post pages are not page-cached; changing the
-  pattern does not redirect old URLs, so add redirects for any already shared.
+  `.post-body` and `.post-nav`. The comments section is a sibling after `</article>`:
+  `section.post-comments#comments` with `.post-comments__title`, `.post-comments__list`,
+  `li.post-comment#comment-{id}` (`.post-comment__meta`, `.post-comment__author`, `.post-comment__date`,
+  `.post-comment__text`, `details.post-comment__reply`, `.post-comment__replies`, `.post-comment--reply`),
+  `.post-comments__notice` (`--pending`, `--approved`), `.post-comments__closed`, `.post-comments__login`
+  and `form.post-comments__form` with `.post-comments__submit`.
+- **Pagination** — set the Blog posts block's **Pagination** to *Newer / older pages*: "How many" becomes
+  the number per page (empty means the **Posts per page** setting), page 1 lives at the bare path and the
+  rest at `?page=N` (up to 100), and a page past the end is a 404. The block renders core's
+  `magna-pagination` navigation.
+- **Languages** — a post whose language is one of the site's languages other than the default is served
+  under that language's prefix (`/fr/blog/bonjour`); every other post at the bare path. Prev/next links
+  stay within the language, and translations sharing a translation group are offered as alternates.
+- **Caching** — guest post pages and listings are stored by the Pages cache and purged when a post,
+  comment, category, tag or Blog setting changes; a post scheduled for later appears on time with no
+  save, and a comment form closes on time.
+- **Redirects** — changing a published post's slug, date, category or language, renaming a category, or
+  editing the permalink pattern redirects the old URL to the new one (through Magna Pages' redirects).
+- **Comments** — each post shows its approved comments (oldest first) and, while comments are open, a
+  form. New comments are held for moderation or auto-approved per **Blog → Settings**. The form works on
+  cached pages, carries a signed render stamp and a honeypot, is rate limited, and can show a captcha
+  when Magna Defence enables the *Blog comment form* surface.
+
+### Known limits
+
+- **Commenter identity.** There is no frontend member system: "Require login to comment" means signed in
+  to the **Magna panel**, and a signed-in commenter's name and email come from their panel account. Guests
+  give a name and email.
+- **One `?page` per page.** Two paginated Blog posts blocks on the same page follow the same `?page=`
+  parameter and move together.
+- **Threads are one level deep** and a post page shows at most 100 top-level comments.
+- **Pattern edits run inline.** Redirects for a permalink pattern change are worked out during the save,
+  a few queries per published post; on a very large blog the save takes a moment.
 
 ## Editor
 
@@ -188,6 +218,9 @@ The delivery API is auto-prefixed at `/api/v1/blog/` and protected by the `magna
 | POST   | `/api/v1/blog/posts/{slug}/reactions` | Toggle a reaction                         |
 
 Responses are frontend-agnostic and never expose internal fields (password hashes, soft-delete state).
+Fields are only ever added: since 1.2.0 a post also carries `summary` (its excerpt, else one generated
+from the body) and `url` (its public, language-prefixed path). A comment submission may send the `_ts`
+render stamp a post page issues; when sent, it is verified.
 
 ## Permissions
 

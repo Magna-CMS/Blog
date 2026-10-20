@@ -5,6 +5,44 @@ All notable changes to Magna Blog are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - Unreleased
+
+Requires Magna 1.6.2 or later (its render context, page-cache, locale and form-token seams).
+
+### Added
+
+- **Paginated post listings.** The Blog posts block has a *Pagination* setting: newer / older pages of
+  "How many" posts (or the *Posts per page* setting), page 1 at the bare path and `?page=N` after it, a
+  404 past the last page, and core's `magna-pagination` navigation. The `blog.posts` and
+  `blog.featured` data sources serve pages to the Pages Loop block too.
+- **Language-prefixed post URLs.** A post in one of the site's non-default languages is served, and
+  linked everywhere, under that language's prefix (`/fr/blog/bonjour`). Prev/next links stay within the
+  language, and a post's translations are offered as hreflang alternates.
+- **Cached post pages.** Guest post pages and post listings are stored by the Magna Pages cache and purged
+  when a post (autosaves of published posts included), a visible comment, a category, a tag or a Blog
+  setting changes. A post scheduled for later appears on time with no save, and a comment form closes on
+  time.
+- **Redirects for moved posts.** Changing a published post's slug, date, category or language, renaming
+  a category, deleting one (its posts move to Uncategorised), or editing the permalink pattern redirects
+  each old URL to the new one, through Magna Pages' redirects.
+- **Comments on post pages.** Each post shows its approved comments, oldest first, with one level of
+  replies, and a comment form while comments are open, held for moderation or auto-approved per
+  settings. The form works on cached pages (core's form token), carries a signed render stamp and a
+  honeypot, is rate limited, and can show a captcha when Magna Defence enables the new *Blog comment form*
+  surface (off by default). "Require login to comment" means signed in to the Magna panel; a signed-in
+  commenter's name and email come from their account.
+- **Excerpts for every post.** A post without an excerpt is summarised by the first paragraph of its body
+  (up to 160 characters, cut between words), used for listings, the page's meta description and SEO. The
+  post builder gains an Excerpt field (up to 300 characters), required on save when *Allow empty excerpt*
+  is off. Existing posts are backfilled on update.
+- **Delivery API:** posts carry `summary` and `url`; adjacent posts carry `url`. Comment submissions may
+  send the `_ts` render stamp, which is then verified. No field was renamed or removed.
+
+### Changed
+
+- The API and the post page's form share one comment submission path. A reply to a reply is filed under
+  its top-level comment (one level deep was already all the API ever listed).
+
 ## [1.1.1] - 2026-10-21
 
 Requires Magna 1.6.0 or later.
