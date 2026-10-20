@@ -71,7 +71,10 @@ it('serves a published public post inside the layout shell', function (): void {
     postPagePost(['title' => 'An older one', 'slug' => 'older', 'published_at' => now()->subDays(5)]);
     postPagePost(['title' => 'A newer one', 'slug' => 'newer', 'published_at' => now()->subDay()]);
 
-    $response = $this->get('/blog/hello')->assertOk()->assertHeader('X-Magna-Cache', 'bypass');
+    // A guest's post page is cached since 1.2.0: stored on the first visit,
+    // served from the page cache on the next.
+    $response = $this->get('/blog/hello')->assertOk()->assertHeader('X-Magna-Cache', 'miss');
+    $this->get('/blog/hello')->assertOk()->assertHeader('X-Magna-Cache', 'hit');
     $html = (string) $response->getContent();
 
     expect($html)->toContain('magna-frontend-page--content')
