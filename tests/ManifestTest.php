@@ -19,6 +19,10 @@ final class ManifestTest extends TestCase
 
         $this->assertNotSame('', $manifest->name);
         $this->assertNotSame('', $manifest->entryClass);
-        $this->assertTrue($manifest->isCompatibleWith('1.0.0'));
+        // The post page builds a FrontendPage with a data provider, which
+        // core only accepts from 1.6.0 — an older core would fatal on boot.
+        $this->assertTrue($manifest->isCompatibleWith('1.6.0'));
+        $this->assertFalse($manifest->isCompatibleWith('1.5.1'));
+        $this->assertFalse($manifest->isCompatibleWith('2.0.0'));
     }
 }
