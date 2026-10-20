@@ -43,7 +43,7 @@ Requires Magna 1.6.2 or later (its render context, page-cache, locale and form-t
 - The API and the post page's form share one comment submission path. A reply to a reply is filed under
   its top-level comment (one level deep was already all the API ever listed).
 
-## [1.1.1] - 2026-10-21
+## [1.1.1] - 2026-10-20
 
 Requires Magna 1.6.0 or later.
 
