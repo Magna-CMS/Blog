@@ -6,14 +6,11 @@ namespace MagnaCms\Blog\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 use MagnaCms\Blog\Enums\CommentStatus;
 use MagnaCms\Blog\Models\Comment;
 use MagnaCms\Blog\Models\Post;
-use MagnaCms\Blog\Settings\BlogSettings;
-use MagnaCms\Blog\Support\CommentPolicy;
-use MagnaCms\Blog\Support\Spam\SpamCheck;
-use MagnaCms\Blog\Support\Spam\SpamSubmission;
+use MagnaCms\Blog\Support\CommentChannel;
+use MagnaCms\Blog\Support\CommentSubmissionHandler;
 
 /**
  * Delivery API for blog comments. Reads only approved comments and accepts new
@@ -21,13 +18,13 @@ use MagnaCms\Blog\Support\Spam\SpamSubmission;
  * "Require login" is a frontend concern (the flag is surfaced in the post
  * payload); this API trusts the frontend for author identity and never accepts
  * a client-supplied author id (impersonation guard).
+ *
+ * Submissions go through CommentSubmissionHandler, the same path the post
+ * page's own comment form takes.
  */
 class CommentController
 {
-    public function __construct(
-        private readonly CommentPolicy $policy,
-        private readonly SpamCheck $spam,
-    ) {}
+    public function __construct(private readonly CommentSubmissionHandler $submissions) {}
 
     /**
      * GET /api/v1/blog/posts/{slug}/comments — approved comments, threaded one level.
@@ -53,92 +50,21 @@ class CommentController
      */
     public function store(Request $request, string $slug): JsonResponse
     {
-        $post = $this->findPost($slug);
-
-        if (! $this->policy->open($post)) {
-            throw ValidationException::withMessages(['body' => 'Comments are closed for this post.']);
-        }
-
-        $honeypotField = (string) config('blog.comments.honeypot_field', 'website');
-
-        /** @var array{body: string, author_name: string, author_email: string, parent_id?: int|null} $data */
-        $data = $request->validate([
-            'body' => ['required', 'string', 'max:5000'],
-            'author_name' => ['required', 'string', 'max:120'],
-            'author_email' => ['required', 'email', 'max:190'],
-            'parent_id' => ['nullable', 'integer'],
-            'form_started_at' => ['nullable', 'integer'],
-            $honeypotField => ['nullable', 'string', 'max:255'],
-        ]);
-
-        if ($this->looksLikeSpam($request, $data, $honeypotField)) {
-            // Reject without persisting, with a generic message that gives a bot
-            // no signal about which check tripped.
-            throw ValidationException::withMessages(['body' => 'Your comment could not be submitted.']);
-        }
-
-        $parentId = $this->resolveParent($post, $data['parent_id'] ?? null);
-
-        $autoApprove = BlogSettings::get()->comment_moderation === 'auto';
-
-        $comment = Comment::create([
-            'post_id' => $post->id,
-            'parent_id' => $parentId,
-            'author_name' => trim(strip_tags($data['author_name'])),
-            'author_email' => $data['author_email'],
-            'body' => trim(strip_tags($data['body'])),
-            'status' => $autoApprove ? CommentStatus::Approved->value : CommentStatus::Pending->value,
-        ]);
+        $comment = $this->submissions->submit($this->findPost($slug), $request, CommentChannel::Api);
+        $approved = $comment->status === CommentStatus::Approved;
 
         return response()->json([
             'data' => [
                 'id' => $comment->id,
                 'status' => $comment->status->value,
-                'awaiting_moderation' => ! $autoApprove,
+                'awaiting_moderation' => ! $approved,
             ],
         ], 201);
-    }
-
-    /**
-     * @param  array{body: string, author_name: string, author_email: string, parent_id?: int|null}  $data
-     */
-    private function looksLikeSpam(Request $request, array $data, string $honeypotField): bool
-    {
-        $startedAt = $request->integer('form_started_at');
-
-        return $this->spam->isSpam(new SpamSubmission(
-            body: $data['body'],
-            authorName: $data['author_name'],
-            authorEmail: $data['author_email'],
-            ip: $request->ip(),
-            userAgent: $request->userAgent(),
-            honeypot: (string) $request->input($honeypotField, ''),
-            elapsedSeconds: $startedAt > 0 ? max(0, now()->getTimestamp() - $startedAt) : null,
-        ));
     }
 
     private function findPost(string $slug): Post
     {
         return Post::query()->live()->public()->where('slug', $slug)->firstOrFail();
-    }
-
-    /**
-     * A reply parent must be an approved comment on the same post; anything else
-     * is treated as a top-level comment.
-     */
-    private function resolveParent(Post $post, ?int $parentId): ?int
-    {
-        if ($parentId === null) {
-            return null;
-        }
-
-        $exists = Comment::query()
-            ->whereKey($parentId)
-            ->where('post_id', $post->id)
-            ->where('status', CommentStatus::Approved->value)
-            ->exists();
-
-        return $exists ? $parentId : null;
     }
 
     /**

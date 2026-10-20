@@ -10,11 +10,17 @@ use MagnaCms\Blog\Models\PostMeta;
 use MagnaCms\Blog\Settings\BlogSettings;
 use MagnaCms\Blog\Support\CommentPolicy;
 use MagnaCms\Blog\Support\MetaRegistry;
+use MagnaCms\Blog\Support\PostPermalink;
 use MagnaCms\Blog\Support\ReactionService;
 
 /**
  * Shapes a Post into the frontend-agnostic JSON returned by the delivery API.
  * No internal columns (password hash, soft-delete state) are ever exposed.
+ *
+ * Fields are only ever added, never renamed or removed: headless frontends
+ * built against an older shape keep working. 1.2.0 added `summary` (the
+ * excerpt, else one generated from the body) and `url` (the post's public,
+ * locale-prefixed path) beside the fields they complement.
  */
 final class PostTransformer
 {
@@ -24,6 +30,8 @@ final class PostTransformer
         private readonly MetaRegistry $metaRegistry,
         private readonly ReactionService $reactions,
     ) {}
+
+    private ?PostPermalink $permalink = null;
 
     /**
      * @return array<string, mixed>
@@ -36,6 +44,8 @@ final class PostTransformer
             'slug' => $post->slug,
             'locale' => $post->locale,
             'excerpt' => $post->excerpt,
+            'summary' => $post->summary(),
+            'url' => $this->permalink()->url($post),
             'featured_image' => $this->imageUrl($post->featured_image),
             'author' => $post->author?->name,
             'category' => $post->category ? ['name' => $post->category->name, 'slug' => $post->category->slug] : null,
@@ -100,7 +110,7 @@ final class PostTransformer
     }
 
     /**
-     * @return array{title: string, slug: string}|null
+     * @return array{title: string, slug: string, url: string}|null
      */
     private function adjacent(Post $post, string $direction): ?array
     {
@@ -108,7 +118,13 @@ final class PostTransformer
 
         return $neighbour === null
             ? null
-            : ['title' => $neighbour->title, 'slug' => $neighbour->slug];
+            : ['title' => $neighbour->title, 'slug' => $neighbour->slug, 'url' => $this->permalink()->url($neighbour)];
+    }
+
+    /** Read once per transformer (one per request), not once per post. */
+    private function permalink(): PostPermalink
+    {
+        return $this->permalink ??= PostPermalink::fromSettings();
     }
 
     /**

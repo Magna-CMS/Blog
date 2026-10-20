@@ -12,10 +12,13 @@ use Illuminate\Translation\Translator;
 use Magna\Blocks\BlockDefinition;
 use Magna\Blocks\DataSources\DataSource;
 use Magna\Blocks\Resolution\BlockDataResolver;
+use Magna\Contracts\CaptchaKeypair;
+use Magna\Contracts\CaptchaSurface;
 use Magna\Contracts\HandlesPersonalData;
 use Magna\Contracts\ProvidesFrontendPages;
 use Magna\Contracts\RegistersAdminResources;
 use Magna\Contracts\RegistersBlocks;
+use Magna\Contracts\RegistersCaptchaSurfaces;
 use Magna\Contracts\RegistersCommands;
 use Magna\Contracts\RegistersDataSources;
 use Magna\Contracts\RegistersSettingsPages;
@@ -41,12 +44,18 @@ use MagnaCms\Blog\Filament\Resources\SeriesResource;
 use MagnaCms\Blog\Filament\Resources\TagResource;
 use MagnaCms\Blog\Frontend\PostFrontendPage;
 use MagnaCms\Blog\Models\Category;
+use MagnaCms\Blog\Models\Comment;
 use MagnaCms\Blog\Models\Post;
+use MagnaCms\Blog\Models\Tag;
 use MagnaCms\Blog\Observers\CategoryObserver;
+use MagnaCms\Blog\Observers\CommentObserver;
 use MagnaCms\Blog\Observers\PostObserver;
+use MagnaCms\Blog\Observers\PostPublicationObserver;
+use MagnaCms\Blog\Observers\TagObserver;
 use MagnaCms\Blog\Policies\PostPolicy;
 use MagnaCms\Blog\Privacy\PersonalDataService;
 use MagnaCms\Blog\Seo\PostSeoMeta;
+use MagnaCms\Blog\Support\CommentSubmissionHandler;
 use MagnaCms\Blog\Support\MetaRegistry;
 use MagnaCms\Blog\Support\Spam\AkismetSpamCheck;
 use MagnaCms\Blog\Support\Spam\HoneypotSpamCheck;
@@ -54,7 +63,7 @@ use MagnaCms\Blog\Support\Spam\SpamCheck;
 use MagnaCms\Blog\Support\VersionedCss;
 use MagnaCms\Blog\Support\VersionedJs;
 
-class BlogPlugin extends Plugin implements HandlesPersonalData, ProvidesFrontendPages, RegistersAdminResources, RegistersBlocks, RegistersCommands, RegistersDataSources, RegistersSettingsPages, RegistersWebhookEvents
+class BlogPlugin extends Plugin implements HandlesPersonalData, ProvidesFrontendPages, RegistersAdminResources, RegistersBlocks, RegistersCaptchaSurfaces, RegistersCommands, RegistersDataSources, RegistersSettingsPages, RegistersWebhookEvents
 {
     public function register(): void
     {
@@ -131,7 +140,12 @@ class BlogPlugin extends Plugin implements HandlesPersonalData, ProvidesFrontend
         ], package: 'magna-cms/blog');
 
         Post::observe(PostObserver::class);
+        // Separate from PostObserver on purpose: it must also see autosaves,
+        // which PostObserver skips, because an autosaved live post is live.
+        Post::observe(PostPublicationObserver::class);
         Category::observe(CategoryObserver::class);
+        Comment::observe(CommentObserver::class);
+        Tag::observe(TagObserver::class);
 
         // Idiomatic Gate surface for per-record post authorization. The policy
         // delegates to PostAccess (the single source of truth), so can('update',
@@ -236,6 +250,28 @@ class BlogPlugin extends Plugin implements HandlesPersonalData, ProvidesFrontend
     }
 
     /**
+     * The public comment form, as a surface a captcha plugin (Magna Defence)
+     * can offer a toggle for. Off until a site owner turns it on: the form
+     * already carries a signed render stamp and a honeypot, and a captcha
+     * widget on every post is a cost not every site wants. Without a
+     * captcha plugin nothing reads this, and the form renders no widget.
+     *
+     * @return list<CaptchaSurface>
+     */
+    public function captchaSurfaces(): array
+    {
+        return [
+            new CaptchaSurface(
+                key: CommentSubmissionHandler::CAPTCHA_SURFACE,
+                label: 'Blog comment form',
+                group: 'Blog',
+                keypair: CaptchaKeypair::Portal,
+                defaultEnabled: false,
+            ),
+        ];
+    }
+
+    /**
      * Post feeds the Pages Loop block can place on any built page.
      *
      * Registered as two handles rather than one configurable source because
@@ -286,6 +322,21 @@ class BlogPlugin extends Plugin implements HandlesPersonalData, ProvidesFrontend
                         ],
                     ],
                     ['handle' => 'limit', 'type' => 'number', 'label' => 'How many', 'required' => false, 'default' => 6],
+                    [
+                        // With "pages", "How many" is the number per page,
+                        // and an empty one falls back to the blog's
+                        // posts-per-page setting. Every paginated block on a
+                        // page follows the same ?page= parameter.
+                        'handle' => 'pagination',
+                        'type' => 'select',
+                        'label' => 'Pagination',
+                        'required' => false,
+                        'default' => 'none',
+                        'options' => [
+                            'none' => 'None',
+                            'pages' => 'Newer / older pages',
+                        ],
+                    ],
                 ],
             ]),
             BlockDefinition::fromArray([

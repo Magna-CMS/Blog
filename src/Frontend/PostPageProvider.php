@@ -4,13 +4,20 @@ declare(strict_types=1);
 
 namespace MagnaCms\Blog\Frontend;
 
+use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Auth\Factory as AuthFactory;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Magna\Frontend\FrontendPageDataProvider;
 use Magna\Frontend\FrontendPageResult;
+use Magna\Frontend\RenderContext;
+use MagnaCms\Blog\Blocks\DataSources\PostsSource;
 use MagnaCms\Blog\Http\Resources\DynamicBlockResolver;
+use MagnaCms\Blog\Listeners\PurgePublicBlogCache;
 use MagnaCms\Blog\Models\Post;
 use MagnaCms\Blog\Seo\PostSeoMeta;
 use MagnaCms\Blog\Support\BlockRenderer;
+use MagnaCms\Blog\Support\CommentPolicy;
 use MagnaCms\Blog\Support\PostPermalink;
 
 /**
@@ -19,16 +26,29 @@ use MagnaCms\Blog\Support\PostPermalink;
  *
  * Returns null (Pages then falls through to its redirects and themed 404)
  * for anything a visitor may not see: unknown slug, draft, scheduled,
- * private or password-protected (the live() + public() scopes), and any
- * path that is not the post's canonical one. The last rule matters for
- * multi-token patterns — `/news/{year}/{slug}` would otherwise answer for
- * every year, an endless supply of duplicate URLs for one post.
+ * private or password-protected (the live() + public() scopes), a post not
+ * served in the request's locale (a French post answers at /fr/…, never at
+ * the bare path), and any path that is not the post's canonical one. The
+ * last rule matters for multi-token patterns — `/news/{year}/{slug}` would
+ * otherwise answer for every year, an endless supply of duplicate URLs for
+ * one post.
+ *
+ * A guest's page is offered to the page cache under `blog:post:{id}` and
+ * `blog:posts` (PurgePublicBlogCache purges both), expiring by itself when
+ * the next post goes live (its prev/next links change) or the comment form
+ * closes. A signed-in visitor's page, or one carrying a flash notice or
+ * form errors, is never offered: what it shows is that visitor's alone.
  */
 final class PostPageProvider implements FrontendPageDataProvider
 {
     public function __construct(
         private readonly DynamicBlockResolver $dynamic,
         private readonly BlockRenderer $renderer,
+        private readonly RenderContext $context,
+        private readonly PostCommentThread $comments,
+        private readonly CommentPolicy $commentPolicy,
+        private readonly Request $request,
+        private readonly AuthFactory $auth,
     ) {}
 
     /**
@@ -42,7 +62,8 @@ final class PostPageProvider implements FrontendPageDataProvider
         }
 
         $permalink = PostPermalink::fromSettings();
-        $post = $this->find($slug, $permalink);
+        $locale = $this->context->locale();
+        $post = $this->find($slug, $permalink, $locale);
 
         if ($post === null || $permalink->for($post) !== $permalink->pathFromParams($params)) {
             return null;
@@ -59,23 +80,28 @@ final class PostPageProvider implements FrontendPageDataProvider
                 'publishedAt' => $post->published_at ?? $post->created_at,
                 'featuredImage' => $this->imageUrl($post->featured_image),
                 'tags' => $post->tags->pluck('name')->all(),
-                'previous' => $this->neighbour($post, 'prev', $permalink),
-                'next' => $this->neighbour($post, 'next', $permalink),
+                'previous' => $this->neighbour($post, 'prev', $permalink, $locale),
+                'next' => $this->neighbour($post, 'next', $permalink, $locale),
                 'stylesheet' => $this->stylesheet(),
+                'comments' => $this->comments->build($post, $this->request, $this->auth->guard()->check()),
             ],
             title: $post->title,
             metaDescription: $this->description($post),
+            cacheable: $this->cacheable(),
+            cacheTags: [PurgePublicBlogCache::postTag($post->id), PostsSource::CACHE_TAG],
+            expiresAt: $this->expiresAt($post, $locale),
+            localeAlternates: $this->alternates($post, $permalink),
         );
     }
 
-    private function find(string $slug, PostPermalink $permalink): ?Post
+    private function find(string $slug, PostPermalink $permalink, string $locale): ?Post
     {
         $with = ['author:id,name', 'tags:id,name,slug'];
         if ($permalink->usesCategory()) {
             $with[] = 'category:id,slug';
         }
 
-        return Post::query()->live()->public()->where('slug', $slug)->with($with)->first();
+        return Post::query()->live()->public()->servedIn($locale)->where('slug', $slug)->with($with)->first();
     }
 
     /**
@@ -83,9 +109,9 @@ final class PostPageProvider implements FrontendPageDataProvider
      *
      * @return array{title: string, url: string}|null
      */
-    private function neighbour(Post $post, string $direction, PostPermalink $permalink): ?array
+    private function neighbour(Post $post, string $direction, PostPermalink $permalink, string $locale): ?array
     {
-        $neighbour = $post->adjacent($direction);
+        $neighbour = $post->adjacent($direction, $locale);
         if ($neighbour === null) {
             return null;
         }
@@ -94,10 +120,72 @@ final class PostPageProvider implements FrontendPageDataProvider
             $neighbour->loadMissing('category:id,slug');
         }
 
-        return ['title' => $neighbour->title, 'url' => $permalink->for($neighbour)];
+        return ['title' => $neighbour->title, 'url' => $permalink->url($neighbour)];
     }
 
-    /** The post's own SEO description when the SEO plugin holds one, else its excerpt. */
+    /** Only a guest's plain GET is the same for every visitor. */
+    private function cacheable(): bool
+    {
+        if ($this->auth->guard()->check()) {
+            return false;
+        }
+
+        if (! $this->request->hasSession()) {
+            return true;
+        }
+
+        $session = $this->request->session();
+
+        return $session->get('_flash.old', []) === []
+            && $session->get('_flash.new', []) === []
+            && ! $session->has('errors');
+    }
+
+    /** The earlier of the next go-live in this locale and the comment form closing. */
+    private function expiresAt(Post $post, string $locale): ?CarbonImmutable
+    {
+        $goLive = Post::nextGoLiveAt($locale);
+        $closes = $this->commentPolicy->open($post) ? $this->commentPolicy->closesAt($post) : null;
+
+        if ($goLive === null || $closes === null) {
+            return $goLive ?? $closes;
+        }
+
+        return $goLive->lessThan($closes) ? $goLive : $closes;
+    }
+
+    /**
+     * The post and its live translations (same translation_group), as
+     * content language => URL — the hreflang set.
+     *
+     * @return array<string, string>
+     */
+    private function alternates(Post $post, PostPermalink $permalink): array
+    {
+        if ($post->translation_group === null || $post->translation_group === '') {
+            return [];
+        }
+
+        $alternates = [$post->locale => $permalink->url($post)];
+
+        $siblings = Post::query()
+            ->live()
+            ->public()
+            ->whereNull('password')
+            ->where('translation_group', $post->translation_group)
+            ->whereKeyNot($post->getKey())
+            ->when($permalink->usesCategory(), fn ($query) => $query->with('category:id,slug'))
+            ->orderBy('locale')
+            ->get(['id', 'slug', 'locale', 'published_at', 'created_at', 'category_id']);
+
+        foreach ($siblings as $sibling) {
+            $alternates[$sibling->locale] ??= $permalink->url($sibling);
+        }
+
+        return $alternates;
+    }
+
+    /** The post's own SEO description when the SEO plugin holds one, else its summary. */
     private function description(Post $post): ?string
     {
         $seo = PostSeoMeta::read($post)['description'] ?? null;
@@ -105,9 +193,7 @@ final class PostPageProvider implements FrontendPageDataProvider
             return trim($seo);
         }
 
-        $excerpt = trim((string) $post->excerpt);
-
-        return $excerpt !== '' ? $excerpt : null;
+        return $post->summary();
     }
 
     private function imageUrl(?string $path): ?string

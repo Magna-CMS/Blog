@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MagnaCms\Blog\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +16,7 @@ use Magna\Content\Models\Revision;
 use Magna\Users\User;
 use MagnaCms\Blog\Enums\PostStatus;
 use MagnaCms\Blog\Enums\PostVisibility;
+use MagnaCms\Blog\Support\PostLocales;
 
 /**
  * @property int $id
@@ -23,6 +25,7 @@ use MagnaCms\Blog\Enums\PostVisibility;
  * @property string $locale
  * @property string|null $translation_group
  * @property string|null $excerpt
+ * @property string|null $generated_excerpt
  * @property array<string, mixed>|null $content
  * @property string|null $search_text
  * @property string|null $featured_image
@@ -297,6 +300,65 @@ class Post extends Model
     }
 
     /**
+     * Posts a request in the given SITE locale is served: the post's own
+     * locale when that is a prefixed one, and — for the fallback locale —
+     * every post in no prefixed locale (see PostLocales). Unlike locale(),
+     * which matches the content language exactly, this is the routing rule.
+     *
+     * @param  Builder<Post>  $query
+     */
+    public function scopeServedIn(Builder $query, string $locale): void
+    {
+        $locales = app(PostLocales::class);
+
+        if ($locale !== $locales->fallback()) {
+            $query->where('locale', $locale);
+
+            return;
+        }
+
+        $prefixed = $locales->prefixed();
+        if ($prefixed !== []) {
+            $query->whereNotIn('locale', $prefixed);
+        }
+    }
+
+    /**
+     * When the public post list next changes with nobody saving anything: the
+     * earliest publish date still ahead among published, public posts — a
+     * post set to go live tomorrow. Null when nothing is waiting.
+     */
+    public static function nextGoLiveAt(?string $locale = null, bool $featuredOnly = false): ?CarbonImmutable
+    {
+        $next = static::query()
+            ->where('status', PostStatus::Published->value)
+            ->public()
+            ->whereNull('password')
+            ->where('published_at', '>', now())
+            ->when($locale !== null, fn (Builder $query) => $query->servedIn((string) $locale))
+            ->when($featuredOnly, fn (Builder $query) => $query->featured())
+            ->min('published_at');
+
+        return is_string($next) && $next !== '' ? CarbonImmutable::parse($next) : null;
+    }
+
+    /**
+     * What the post is about in a sentence: the author's excerpt, else the
+     * one generated from the body's first paragraph, else nothing.
+     */
+    public function summary(): ?string
+    {
+        foreach ([$this->excerpt, $this->generated_excerpt] as $candidate) {
+            $candidate = trim((string) $candidate);
+            if ($candidate !== '') {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Restrict to a series by slug, ordered by position within that series.
      *
      * @param  Builder<Post>  $query
@@ -337,9 +399,10 @@ class Post extends Model
     /**
      * The immediately newer / older live public post, by publish date then id for
      * a stable total order even when two posts share a timestamp. Direction is
-     * 'next' (newer) or 'prev' (older).
+     * 'next' (newer) or 'prev' (older). With a site locale, only posts served
+     * in it: a French post's neighbours are French posts.
      */
-    public function adjacent(string $direction): ?self
+    public function adjacent(string $direction, ?string $locale = null): ?self
     {
         $newer = $direction === 'next';
         $anchor = $this->published_at ?? $this->created_at ?? now();
@@ -347,6 +410,7 @@ class Post extends Model
         return static::query()
             ->live()
             ->public()
+            ->when($locale !== null, fn (Builder $query) => $query->servedIn((string) $locale))
             ->whereKeyNot($this->getKey())
             ->where(function (Builder $q) use ($anchor, $newer): void {
                 $operator = $newer ? '>' : '<';
@@ -360,7 +424,7 @@ class Post extends Model
             ->orderBy('id', $newer ? 'asc' : 'desc')
             // Beyond id/title/slug: the columns a permalink pattern's date
             // and category tokens read, so a neighbour can be linked.
-            ->first(['id', 'title', 'slug', 'published_at', 'created_at', 'category_id']);
+            ->first(['id', 'title', 'slug', 'locale', 'published_at', 'created_at', 'category_id']);
     }
 
     /** Concatenated searchable text (title + excerpt + flattened blocks). */

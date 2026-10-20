@@ -6,7 +6,9 @@
     The class hooks are a contract with themes, which style this page with
     CSS because they cannot override the view: <article> directly in the
     wrapper; .post-title, .post-meta (.who, .dot), .featured and .post-body
-    as in the admin preview; .post-nav directly inside the article.
+    as in the admin preview; .post-nav directly inside the article; the
+    comments section (partials/comments) as a SIBLING after </article>, so
+    a theme's `article > nav` rule never reaches it.
 
     $bodyHtml is BlockRenderer output: content sanitised by EditorJsSanitizer
     on save, every attribute escaped on render.
@@ -55,3 +57,6 @@
         </nav>
     @endif
 </article>
+@if (($comments['visible'] ?? false) === true)
+    @include('blog::frontend.partials.comments', ['comments' => $comments])
+@endif

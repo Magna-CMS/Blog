@@ -50,4 +50,7 @@
             @endforeach
         </ul>
     @endif
+
+    {{-- Set only when the block paginates; renders nothing for a single page. --}}
+    @include('magna::partials.pagination', ['pagination' => $block['_resolved']['pagination'] ?? null])
 </div>

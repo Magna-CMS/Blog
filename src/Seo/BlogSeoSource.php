@@ -27,7 +27,8 @@ use MagnaCms\Blog\Support\PostPermalink;
  * carries the post's content facts.
  *
  * Post URLs come from the same permalink pattern the public post page is
- * mounted at, so sitemap URLs are the URLs the site serves. The pattern is
+ * mounted at, locale prefix included (PostPermalink::url), so sitemap URLs and
+ * hreflang alternates are the URLs the site serves. The pattern is
  * read once per call rather than held: the registry keeps one instance of
  * this class for the life of the process.
  */
@@ -88,13 +89,13 @@ final class BlogSeoSource implements SeoSubjectSource
         return new SeoSubject(
             key: 'blog:'.$post->slug,
             type: SubjectType::Article,
-            url: url($permalink->for($post)),
+            url: url($permalink->url($post)),
             title: $post->title,
             locale: $post->locale,
             indexable: $post->isPubliclyVisible(),
             updatedAt: DateTimeImmutable::createFromInterface($post->updated_at ?? now()),
             plainText: $post->plainText(),
-            excerpt: filled($post->excerpt) ? (string) $post->excerpt : null,
+            excerpt: $post->summary(),
             publishedAt: $post->published_at !== null
                 ? DateTimeImmutable::createFromInterface($post->published_at)
                 : null,
@@ -111,7 +112,7 @@ final class BlogSeoSource implements SeoSubjectSource
      */
     private function alternates(Post $post, PostPermalink $permalink): array
     {
-        $alternates = [$post->locale => url($permalink->for($post))];
+        $alternates = [$post->locale => url($permalink->url($post))];
 
         if ($post->translation_group === null || $post->translation_group === '') {
             return $alternates;
@@ -124,7 +125,7 @@ final class BlogSeoSource implements SeoSubjectSource
             ->get(['id', 'locale', 'slug', 'published_at', 'created_at', 'category_id']);
 
         foreach ($siblings as $sibling) {
-            $alternates[$sibling->locale] = url($permalink->for($sibling));
+            $alternates[$sibling->locale] = url($permalink->url($sibling));
         }
 
         return $alternates;

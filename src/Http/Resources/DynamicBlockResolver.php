@@ -123,7 +123,7 @@ final class DynamicBlockResolver
             $query->with('category:id,slug');
         }
 
-        $columns = ['id', 'title', 'slug', 'excerpt', 'featured_image', 'published_at', 'created_at', 'category_id'];
+        $columns = ['id', 'title', 'slug', 'locale', 'excerpt', 'featured_image', 'published_at', 'created_at', 'category_id'];
 
         /*
          * `url` and `image` are what BlockRenderer reads; `slug` and
@@ -138,7 +138,7 @@ final class DynamicBlockResolver
                 'slug' => $related->slug,
                 'excerpt' => $related->excerpt,
                 'featured_image' => $image,
-                'url' => $permalink->for($related),
+                'url' => $permalink->url($related),
                 'image' => $image,
             ];
         }

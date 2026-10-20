@@ -19,11 +19,15 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Magna\Frontend\Events\PublicUrlsMoved;
+use Magna\Frontend\UrlMove;
 use Magna\Users\User;
 use MagnaCms\Blog\Enums\PostStatus;
+use MagnaCms\Blog\Listeners\PurgePublicBlogCache;
 use MagnaCms\Blog\Models\Category;
 use MagnaCms\Blog\Settings\BlogSettings;
 use MagnaCms\Blog\Support\Locales;
+use MagnaCms\Blog\Support\PostUrlHistory;
 
 /**
  * @property Schema $form
@@ -130,7 +134,7 @@ class BlogSettingsPage extends Page implements HasForms
                     ->description('Where each post\'s public page lives (served through Magna Pages), and the URL every blog link and the sitemap use.')
                     ->schema([
                         TextInput::make('permalink_pattern')
-                            ->helperText('e.g. /blog/{slug}, /blog/{year}/{slug}, /blog/{category}/{slug}. Each token must be a whole segment and {slug} is required — otherwise /blog/{slug} is used. Changing it does not redirect old post URLs: add redirects for any already shared.'),
+                            ->helperText('e.g. /blog/{slug}, /blog/{year}/{slug}, /blog/{category}/{slug}. Each token must be a whole segment and {slug} is required — otherwise /blog/{slug} is used. Changing it redirects the old URL of every published post to its new one (through the redirects of Magna Pages).'),
                     ]),
 
                 Section::make('Editor')
@@ -197,14 +201,15 @@ class BlogSettingsPage extends Page implements HasForms
                     ]),
 
                 Section::make('Comments')
-                    ->description('Backend flags for future frontend comment plugins. New posts default to allowing comments unless disabled per post.')
+                    ->description('Each post page shows its approved comments and a comment form. New posts default to allowing comments unless disabled per post.')
                     ->columns(2)
                     ->schema([
                         Toggle::make('enable_comments')
                             ->label('Enable comments site-wide')
                             ->helperText('Master switch. When off, no post accepts comments.'),
                         Toggle::make('require_login_to_comment')
-                            ->label('Require login to comment'),
+                            ->label('Require login to comment')
+                            ->helperText('Signed in means a Magna panel user: the site has no separate member accounts.'),
                         Select::make('comment_moderation')
                             ->label('New comment handling')
                             ->options([
@@ -224,12 +229,19 @@ class BlogSettingsPage extends Page implements HasForms
             ]);
     }
 
-    public function save(): void
+    /**
+     * Livewire injects the collaborators: the page holds no service state.
+     */
+    public function save(PostUrlHistory $urls, PurgePublicBlogCache $purge): void
     {
         /** @var array<string, mixed> $data */
         $data = $this->form->getState();
 
         $settings = BlogSettings::get();
+
+        // Read before the assignment below: the moves are old URL → new URL.
+        $oldPattern = $settings->permalink_pattern;
+
         $settings->default_status = (string) $data['default_status'];
         $settings->default_author_id = $data['default_author_id'] ?: null;
         $settings->posts_per_page = (int) $data['posts_per_page'];
@@ -252,7 +264,26 @@ class BlogSettingsPage extends Page implements HasForms
         $settings->custom_fonts = $this->normaliseCustomFonts($data['custom_fonts'] ?? []);
         $settings->save();
 
+        $this->announcePublicChanges($urls->movesForPattern($oldPattern, $settings->permalink_pattern), $purge);
+
         Notification::make()->title(__('blog::settings.saved'))->success()->send();
+    }
+
+    /**
+     * A pattern edit moves every live post's URL (whoever serves redirects
+     * records old → new), and any setting can change what a public page
+     * shows — comment rules, posts per page, the pattern itself — so every
+     * cached page is purged.
+     *
+     * @param  list<UrlMove>  $moves
+     */
+    private function announcePublicChanges(array $moves, PurgePublicBlogCache $purge): void
+    {
+        if ($moves !== []) {
+            PublicUrlsMoved::dispatch($moves, 'magna-cms/blog');
+        }
+
+        $purge->everything();
     }
 
     /**
@@ -336,7 +367,7 @@ class BlogSettingsPage extends Page implements HasForms
             Action::make('save')
                 ->label((string) __('blog::settings.save'))
                 ->icon('heroicon-o-check')
-                ->action(fn () => $this->save()),
+                ->action(fn (PostUrlHistory $urls, PurgePublicBlogCache $purge) => $this->save($urls, $purge)),
         ];
     }
 }

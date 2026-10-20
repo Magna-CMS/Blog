@@ -10,6 +10,7 @@ use MagnaCms\Blog\Enums\PostStatus;
 use MagnaCms\Blog\Models\Post;
 use MagnaCms\Blog\Settings\BlogSettings;
 use MagnaCms\Blog\Support\DefaultCategory;
+use MagnaCms\Blog\Support\ExcerptGenerator;
 use MagnaCms\Blog\Webhooks\BlogWebhookDispatcher;
 
 /**
@@ -30,6 +31,10 @@ class PostObserver
     public function saving(Post $post): void
     {
         $post->search_text = $post->searchableText();
+
+        // Same reasoning: the fallback summary is derived from the body, so
+        // it is rewritten from the body on every write and can never lag it.
+        $post->generated_excerpt = ExcerptGenerator::fromContent($post->content);
 
         // WordPress-style: a post with no category is filed under the default
         // ("Uncategorised") category rather than left orphaned.

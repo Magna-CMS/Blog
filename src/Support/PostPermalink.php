@@ -37,9 +37,26 @@ final class PostPermalink
      */
     public static function fromSettings(): self
     {
-        $configured = new self(BlogSettings::get()->permalink_pattern);
+        return self::forPattern(BlogSettings::get()->permalink_pattern);
+    }
+
+    /**
+     * $pattern, or the default when the post page could not be served at it
+     * — the same fallback fromSettings() applies, for a pattern that is not
+     * (or no longer) the configured one, such as the one a settings save is
+     * about to replace.
+     */
+    public static function forPattern(string $pattern): self
+    {
+        $configured = new self($pattern);
 
         return $configured->routePath() !== null ? $configured : new self(self::DEFAULT_PATTERN);
+    }
+
+    /** The pattern this instance builds paths from. */
+    public function pattern(): string
+    {
+        return $this->pattern;
     }
 
     /**
@@ -137,6 +154,17 @@ final class PostPermalink
         ]);
 
         return $this->normalise($path);
+    }
+
+    /**
+     * The post's public URL: its path under the pattern, prefixed with the
+     * locale it is served in (/fr/blog/bonjour). What every link the blog
+     * emits uses; for() stays the unprefixed path the post page's route
+     * captures.
+     */
+    public function url(Post $post): string
+    {
+        return app(PostLocales::class)->urlFor($post->locale, $this->for($post));
     }
 
     private function normalise(string $path): string
