@@ -40,6 +40,19 @@ if [ ! -f "$CORE/vendor/bin/pint" ]; then
     exit 1
 fi
 
+# The editor bundle is committed: Composer installs a tag straight from git, so
+# a bundle that lived only in a developer's dist/ shipped to no site at all —
+# every installed blog's editor showed a title and no body. A change to the
+# editor's source therefore has to arrive with the bundle rebuilt from it.
+staged_all=$(git diff --cached --name-only --diff-filter=ACMR)
+source_changed=$(printf '%s\n' "$staged_all" | grep -E '^(resources/js/|esbuild\.config\.js$|package(-lock)?\.json$)' || true)
+bundle_staged=$(printf '%s\n' "$staged_all" | grep -x 'dist/blog-editor.js' || true)
+if [ -n "$source_changed" ] && [ -z "$bundle_staged" ]; then
+    echo "pre-commit: editor source changed but dist/blog-editor.js is not staged." >&2
+    echo "  Run \`npm run build\` and stage dist/blog-editor.js with this commit." >&2
+    exit 1
+fi
+
 staged_any_php=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.php$' || true)
 
 if [ -z "$staged_any_php" ]; then

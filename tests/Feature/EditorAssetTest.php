@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-// The admin editor cannot function without its compiled bundle, and that bundle
-// is a build artifact rather than a committed file. These checks make a
-// forgotten `npm run build` fail the suite loudly — with an actionable message —
-// instead of shipping an install whose editor silently never loads.
+// The admin editor cannot function without its compiled bundle. It used to be a
+// gitignored build artifact: these checks passed in every developer's checkout,
+// while Composer — which installs a tag straight from git — delivered a package
+// with no bundle at all, and every installed blog's editor showed a title and
+// no body. The bundle is now committed; the last test keeps it that way.
 
 $bundle = __DIR__.'/../../dist/blog-editor.js';
 
@@ -28,4 +29,19 @@ it('ships a non-trivial, well-formed editor bundle', function () use ($bundle): 
         ->and($contents)->toContain('magnaBlog')
         // esbuild emits an IIFE for `format: 'iife'`.
         ->and($contents)->toContain('use strict');
+});
+
+it('commits the bundle, so a release installed from git carries it', function (): void {
+    $root = dirname(__DIR__, 2);
+    $tracked = [];
+    $code = 0;
+    exec('git -C '.escapeshellarg($root).' ls-files -- dist/blog-editor.js 2>&1', $tracked, $code);
+
+    if ($code !== 0) {
+        $this->markTestSkipped('Not a git checkout.');
+    }
+
+    expect($tracked)->toBe(['dist/blog-editor.js'],
+        'dist/blog-editor.js is not tracked by git, so a Composer install would ship without the editor.',
+    );
 });

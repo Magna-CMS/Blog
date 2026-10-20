@@ -5,6 +5,19 @@ All notable changes to Magna Blog are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-10-21
+
+Requires Magna 1.6.0 or later.
+
+### Fixed
+
+- **The post editor works on installed sites.** The editor's compiled bundle (`dist/blog-editor.js`)
+  was gitignored, so every release — which Composer installs straight from the git tag — shipped
+  without it. On an installed site the editor showed a title and no body, `filament:assets` aborted on
+  the missing file, and no post could be written. The bundle is now committed, a test fails if it
+  ever stops being tracked, and the plugin's pre-commit hook refuses an editor-source change that
+  arrives without the rebuilt bundle.
+
 ## [1.1.0] - 2026-10-20
 
 Requires Magna 1.6.0 or later.
