@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace MagnaCms\Blog\Filament\Resources\PostResource\Pages;
 
-use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
@@ -26,24 +25,22 @@ use MagnaCms\Blog\Enums\MetaType;
 use MagnaCms\Blog\Enums\PostStatus;
 use MagnaCms\Blog\Enums\PostVisibility;
 use MagnaCms\Blog\Filament\Fields\EditorJsField;
-use MagnaCms\Blog\Models\Category;
 use MagnaCms\Blog\Models\Post;
-use MagnaCms\Blog\Models\Series;
-use MagnaCms\Blog\Models\Tag;
 use MagnaCms\Blog\Seo\PostSeoMeta;
 use MagnaCms\Blog\Settings\BlogSettings;
-use MagnaCms\Blog\Support\Locales;
-use MagnaCms\Blog\Support\PostPermalink;
 use MagnaCms\Blog\Support\SlugGenerator;
 
 /**
- * Shared canvas + sidebar schema and media-picker wiring for the full-screen
+ * Shared canvas schema, sidebar state and media-picker wiring for the full-screen
  * post builder, used by both the create and edit pages so the two stay in sync.
  * The layout mirrors the Magna Docs page builder; the only content difference is
- * the Editor.js canvas in place of the Markdown editor.
+ * the Editor.js canvas in place of the Markdown editor. The sidebar's schema
+ * itself lives in PostSidebarSections.
  */
 trait EditsPostInBuilder
 {
+    use PostSidebarSections;
+
     public string $editorStatus = '';
 
     /**
@@ -93,6 +90,7 @@ trait EditsPostInBuilder
             $this->data['translation_group'] ??= $record->translation_group;
             $this->data['is_featured'] ??= $record->is_featured;
             $this->data['allow_comments'] ??= $record->allow_comments;
+            $this->data['excerpt'] ??= $record->excerpt;
             $this->data['featured_image'] ??= $record->featured_image;
             $this->data['published_at'] ??= $record->published_at?->format('Y-m-d H:i:s');
         } else {
@@ -106,6 +104,7 @@ trait EditsPostInBuilder
             $this->data['translation_group'] ??= null;
             $this->data['is_featured'] ??= false;
             $this->data['allow_comments'] ??= true;
+            $this->data['excerpt'] ??= null;
             $this->data['featured_image'] ??= null;
             $this->data['published_at'] ??= null;
         }
@@ -171,252 +170,6 @@ trait EditsPostInBuilder
                 EditorJsField::make('content')
                     ->hiddenLabel()
                     ->editorPlaceholder('Write your story…'),
-            ]);
-    }
-
-    /** Sidebar: publishing, permalink, featured image, organisation. */
-    public function sidebarForm(Schema $schema): Schema
-    {
-        return $schema
-            ->statePath('data')
-            ->components([
-                Section::make('Summary')
-                    ->schema([
-                        Select::make('status')
-                            ->label('Status')
-                            ->options(PostStatus::options())
-                            ->default(PostStatus::Draft->value)
-                            ->native(false)
-                            ->selectablePlaceholder(false)
-                            ->live(),
-
-                        Select::make('visibility')
-                            ->label('Visibility')
-                            ->options(PostVisibility::options())
-                            ->default(PostVisibility::Public->value)
-                            ->native(false)
-                            ->selectablePlaceholder(false)
-                            ->live(),
-
-                        TextInput::make('password')
-                            ->label('Password')
-                            ->password()
-                            ->revealable()
-                            ->maxLength(255)
-                            ->visible(fn (Get $get): bool => $get('visibility') === PostVisibility::Password->value)
-                            ->dehydrated(fn (?string $state): bool => filled($state))
-                            ->helperText('Leave blank when editing to keep the current password.'),
-
-                        DateTimePicker::make('published_at')
-                            ->label('Publish date')
-                            ->seconds(false)
-                            ->visible(fn (Get $get): bool => in_array(
-                                $get('status'),
-                                [PostStatus::Published->value, PostStatus::Scheduled->value],
-                                true,
-                            )),
-
-                        Toggle::make('is_featured')
-                            ->label('Feature this post')
-                            ->helperText('Featured posts can be pulled out via the delivery API.')
-                            ->default(false),
-
-                        Placeholder::make('_review_note')
-                            ->label('Changes requested')
-                            ->visible(fn (): bool => ($post = $this->currentPost()) !== null
-                                && filled($post->review_note)
-                                && $post->status !== PostStatus::Published)
-                            ->content(fn (): HtmlString => new HtmlString(
-                                '<div style="color:var(--de-danger,#dc2626);font-size:.8rem;line-height:1.4">'
-                                .e((string) $this->currentPost()?->review_note).'</div>'
-                            )),
-
-                        Placeholder::make('_author')
-                            ->label('Author')
-                            ->content(fn (): string => auth()->user()->name ?? 'Admin'),
-
-                        Select::make('co_authors')
-                            ->label('Co-authors')
-                            ->multiple()
-                            ->searchable()
-                            ->options(fn (): array => User::query()->orderBy('name')->pluck('name', 'id')->all())
-                            ->placeholder('Add contributors')
-                            ->helperText('Extra bylines shown alongside the primary author.'),
-                    ]),
-
-                Section::make('Permalink')
-                    ->collapsible()
-                    ->schema([
-                        TextInput::make('slug')
-                            ->hiddenLabel()
-                            ->prefix(fn (): string => PostPermalink::fromSettings()->staticPrefix())
-                            ->placeholder('post-slug')
-                            ->helperText('Auto-generated from the title; uniqueness is enforced on save.'),
-                    ]),
-
-                Section::make('Featured Image')
-                    ->collapsible()
-                    ->schema([
-                        FileUpload::make('featured_image')
-                            ->hiddenLabel()
-                            ->image()
-                            ->disk('public')
-                            ->directory('blog-featured')
-                            ->imageResizeMode('cover')
-                            ->imageCropAspectRatio('16:9')
-                            ->imageResizeTargetWidth('1200')
-                            ->imageResizeTargetHeight('675')
-                            ->panelAspectRatio('16:9')
-                            ->panelLayout('integrated')
-                            ->visible(fn (): bool => blank($this->libraryImageUrl)),
-
-                        Placeholder::make('_library_preview')
-                            ->hiddenLabel()
-                            ->visible(fn (): bool => filled($this->libraryImageUrl))
-                            ->content(fn (): HtmlString => new HtmlString(
-                                '<div class="de-featured-preview">'
-                                .'<img src="'.e((string) $this->libraryImageUrl).'" alt="Featured image">'
-                                .'<button type="button" class="de-featured-preview-remove" wire:click="clearLibraryImage" title="Remove image">&times;</button>'
-                                .'<span class="de-featured-preview-tag">From media library</span>'
-                                .'</div>'
-                            )),
-
-                        Placeholder::make('_browse_media')
-                            ->hiddenLabel()
-                            ->content(new HtmlString(
-                                '<button type="button" class="de-browse-link" onclick="Livewire.dispatch(\'magna:open-media-picker\', { target: \'featured-image\' })">'
-                                .'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>'
-                                .'Browse media library</button>'
-                            )),
-                    ]),
-
-                Section::make('Organisation')
-                    ->collapsible()
-                    ->schema([
-                        Select::make('category_id')
-                            ->label('Category')
-                            ->options(fn (): array => Category::query()->orderBy('name')->pluck('name', 'id')->all())
-                            ->searchable()
-                            ->placeholder('— none —')
-                            ->createOptionForm([
-                                TextInput::make('name')
-                                    ->required()
-                                    ->live(onBlur: true)
-                                    ->afterStateUpdated(fn (?string $state, callable $set) => $set('slug', Str::slug((string) $state))),
-                                TextInput::make('slug')->required()->unique('blog_categories', 'slug'),
-                            ])
-                            // Assigning a category is an edit-level act; CREATING
-                            // one is taxonomy management, so gate the inline create.
-                            ->createOptionUsing(function (array $data): int {
-                                abort_unless(auth()->user()?->can('blog.categories.manage') ?? false, 403);
-
-                                return Category::create($data)->id;
-                            }),
-
-                        Select::make('tags')
-                            ->label('Tags')
-                            ->multiple()
-                            ->searchable()
-                            ->options(fn (): array => Tag::query()->orderBy('name')->pluck('name', 'id')->all())
-                            ->createOptionForm([
-                                TextInput::make('name')->required(),
-                            ])
-                            ->createOptionUsing(function (array $data): int {
-                                abort_unless(auth()->user()?->can('blog.tags.manage') ?? false, 403);
-
-                                return Tag::create([
-                                    'name' => $data['name'],
-                                    'slug' => Str::slug((string) $data['name']),
-                                ])->id;
-                            }),
-
-                        Select::make('series_id')
-                            ->label('Series')
-                            ->hintIcon(
-                                'heroicon-m-question-mark-circle',
-                                tooltip: 'A series groups related posts into an ordered set (e.g. a tutorial in parts). '
-                                    .'Pick a series and set the part number; the frontend then shows "Part N of M" with previous/next links. Optional.',
-                            )
-                            ->options(fn (): array => Series::query()->orderBy('title')->pluck('title', 'id')->all())
-                            ->searchable()
-                            ->placeholder('— none —')
-                            ->live()
-                            ->createOptionForm([
-                                TextInput::make('title')
-                                    ->required()
-                                    ->live(onBlur: true)
-                                    ->afterStateUpdated(fn (?string $state, callable $set) => $set('slug', Str::slug((string) $state))),
-                                TextInput::make('slug')->required()->unique('blog_series', 'slug'),
-                            ])
-                            ->createOptionUsing(function (array $data): int {
-                                abort_unless(auth()->user()?->can('blog.series.manage') ?? false, 403);
-
-                                return Series::create($data)->id;
-                            }),
-
-                        TextInput::make('series_position')
-                            ->label('Part number')
-                            ->numeric()
-                            ->minValue(1)
-                            ->visible(fn (Get $get): bool => filled($get('series_id')))
-                            ->helperText('Order of this post within the series.'),
-
-                        Select::make('locale')
-                            ->label('Language')
-                            ->options(fn (): array => Locales::all())
-                            ->searchable()
-                            ->default(fn (): string => BlogSettings::get()->default_locale ?: 'en')
-                            ->native(false)
-                            ->selectablePlaceholder(false),
-
-                        TextInput::make('translation_group')
-                            ->label('Translation group')
-                            ->maxLength(40)
-                            ->helperText('Give the same key to posts that are translations of each other.'),
-                    ]),
-
-                Section::make('Discussion')
-                    ->collapsible()
-                    ->schema([
-                        Toggle::make('allow_comments')
-                            ->label('Allow comments on this post')
-                            ->default(true)
-                            ->helperText('Overridden when comments are disabled site-wide in Blog settings.'),
-                    ]),
-
-                Section::make('Custom Fields')
-                    ->collapsible()
-                    ->collapsed()
-                    ->schema([
-                        Repeater::make('meta')
-                            ->hiddenLabel()
-                            ->addActionLabel('Add custom field')
-                            ->schema([
-                                TextInput::make('key')
-                                    ->label('Key')
-                                    ->required()
-                                    ->maxLength(190)
-                                    ->rule('regex:/^[A-Za-z0-9_.:-]+$/')
-                                    ->helperText('Letters, numbers, and _ . : - only.'),
-
-                                Select::make('type')
-                                    ->label('Type')
-                                    ->options(MetaType::options())
-                                    ->default(MetaType::String->value)
-                                    ->native(false)
-                                    ->selectablePlaceholder(false),
-
-                                Textarea::make('value')
-                                    ->label('Value')
-                                    ->rows(2)
-                                    ->helperText('For the JSON type, enter valid JSON.'),
-                            ])
-                            ->itemLabel(fn (array $state): ?string => $state['key'] ?? null)
-                            ->columns(1)
-                            ->defaultItems(0)
-                            ->reorderable(false)
-                            ->helperText('Custom fields are private by default; expose keys in Blog settings to serve them via the API.'),
-                    ]),
             ]);
     }
 
