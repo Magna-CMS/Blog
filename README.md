@@ -5,21 +5,23 @@
 <h1 align="center">Magna Blog</h1>
 
 <p align="center">
-  A professional, headless blog and content plugin for <strong>Magna CMS</strong>.
+  A professional blog and content plugin for <strong>Magna CMS</strong> — public post pages through
+  Magna Pages, and a delivery API for headless frontends.
 </p>
 
 <p align="center">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
   <a href="composer.json"><img alt="PHP" src="https://img.shields.io/badge/php-%5E8.3-777bb4.svg"></a>
-  <a href="https://github.com/Magna-CMS"><img alt="Magna CMS" src="https://img.shields.io/badge/Magna%20CMS-%5E1.0-6366f1.svg"></a>
+  <a href="https://github.com/Magna-CMS"><img alt="Magna CMS" src="https://img.shields.io/badge/Magna%20CMS-%3E%3D1.6-6366f1.svg"></a>
 </p>
 
 Magna Blog manages blog content through the Magna admin panel using an **Editor.js** block editor, and
 exposes a clean, read-only delivery API for any frontend — a headless site, a static build, or a native
 app.
 
-It does not render a frontend of its own. It owns content authoring, organisation and delivery;
-presentation is left to your site.
+With **Magna Pages** installed, every published post is also served as a page of your site, at its
+permalink and inside your theme's layout. Without Pages the blog stays headless: it owns authoring,
+organisation and delivery, and presentation is left to your frontend.
 
 ---
 
@@ -67,6 +69,8 @@ General, slugs, permalinks, editor, content and comment options — all in the a
   translation groups.
 - **Editorial workflow** — draft, pending review, scheduled, published and archived states, with soft-
   delete Trash, revisions and scheduled publishing.
+- **Public post pages** — with Magna Pages, each published post is served at its permalink inside the
+  site's theme.
 - **Delivery API** — a versioned, cache-friendly JSON API for headless frontends.
 - **Engagement** — threaded comments with spam protection, and anonymous reactions.
 - **Operations** — CSV export, WordPress (WXR) import, GDPR personal-data export/erase, and webhooks.
@@ -99,8 +103,9 @@ General, slugs, permalinks, editor, content and comment options — all in the a
 ## Requirements
 
 - PHP **8.3+**
-- **Magna CMS** ^1.0 (provides Filament v4, media library, users, permissions, settings, revisions,
-  privacy and webhook subsystems)
+- **Magna CMS** 1.6.0 or later (provides Filament, media library, users, permissions, settings,
+  revisions, privacy and webhook subsystems)
+- **Magna Pages** — optional, for public post pages
 
 ## Installation
 
@@ -135,6 +140,24 @@ BLOG_DEFAULT_LOCALE=en
 
 Create and manage posts from **Admin → Blog**. The full-screen builder pairs an Editor.js canvas with a
 tabbed sidebar for post settings, block settings and (when the Magna SEO plugin is installed) SEO.
+
+## Public post pages
+
+With **Magna Pages** installed, each published, public post is served at the **Permalink pattern** set
+in **Blog → Settings** (default `/blog/{slug}`), inside the site's layout, with the post's title and
+description as the page's meta. For the `/blog` listing, place the **Blog posts** block on a Pages page.
+
+- **Patterns** — tokens `{slug}`, `{year}`, `{month}`, `{day}` and `{category}`, each a whole path segment
+  (`/blog/{year}/{slug}`, not `/blog/{year}-{slug}`). `{slug}` is required; a pattern the site cannot
+  serve falls back to `/blog/{slug}` and logs a warning. Every blog link, and the sitemap when Magna SEO is
+  installed, follow the same pattern; only a post's canonical path answers.
+- **Visibility** — drafts, scheduled, private and password-protected posts, and unknown slugs, get the
+  site's 404. A Pages page published at the same path wins over the post.
+- **Theming** — themes style the page with CSS: `<article>` sits directly inside
+  `.magna-frontend-page--content`, with `.post-title`, `.post-meta` (`.who`, `.dot`), `.featured`,
+  `.post-body` and `.post-nav`.
+- **Limits** — the Blog posts block has no pagination; post pages are not page-cached; changing the
+  pattern does not redirect old URLs, so add redirects for any already shared.
 
 ## Editor
 
@@ -205,9 +228,12 @@ The plugin ships an extensive Pest suite (feature and unit) that runs inside a M
 # From the Magna CMS application
 php artisan test --testsuite=Plugins
 
-# Static analysis and style
-vendor/bin/phpstan analyse -c plugins-dev/magna-cms/blog/phpstan.neon
-vendor/bin/pint --test plugins-dev/magna-cms/blog
+# Style, static analysis and tests in one go
+composer plugin-check -- magna/blog
+
+# Or separately
+vendor/bin/phpstan analyse -c plugins-dev/magna/blog/phpstan.neon.dist
+vendor/bin/pint --test plugins-dev/magna/blog
 ```
 
 ## Security
