@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MagnaCms\Blog\Filament\Resources\PostResource\Pages;
 
+use DateTimeInterface;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
@@ -15,6 +16,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Magna\Users\User;
@@ -304,5 +306,27 @@ trait PostSidebarSections
     protected function excerptRequired(): bool
     {
         return $this->forcedStatus !== null && ! BlogSettings::get()->allow_empty_excerpt;
+    }
+
+    /**
+     * The publish date as the field holds it: wall-clock time on the site's
+     * own clock. The canvas fill seeds the record's serialised Carbon
+     * ("…T09:04:00.000000Z"), which a datetime-local input cannot show, and
+     * which saving wrote back as wall-clock time — moving every post by the
+     * site's UTC offset whenever it was saved.
+     */
+    protected function publishDateState(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (! $value instanceof DateTimeInterface && ! is_string($value)) {
+            return null;
+        }
+
+        return Carbon::parse($value)
+            ->setTimezone(config()->string('app.timezone'))
+            ->format('Y-m-d H:i:s');
     }
 }

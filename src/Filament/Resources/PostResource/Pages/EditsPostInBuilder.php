@@ -92,7 +92,7 @@ trait EditsPostInBuilder
             $this->data['allow_comments'] ??= $record->allow_comments;
             $this->data['excerpt'] ??= $record->excerpt;
             $this->data['featured_image'] ??= $record->featured_image;
-            $this->data['published_at'] ??= $record->published_at?->format('Y-m-d H:i:s');
+            $this->data['published_at'] = $this->publishDateState($this->data['published_at'] ?? $record->published_at);
         } else {
             $this->data['status'] ??= PostStatus::Draft->value;
             $this->data['visibility'] ??= PostVisibility::Public->value;
