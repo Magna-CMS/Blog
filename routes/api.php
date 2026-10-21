@@ -32,6 +32,10 @@ Route::middleware(['magna.api'])
     ->get('/posts/{slug}/comments', [CommentController::class, 'index'])
     ->name('blog.comments.index');
 
+Route::middleware(['magna.api', 'throttle:60,1'])
+    ->get('/posts/{slug}/comments/stamp', [CommentController::class, 'stamp'])
+    ->name('blog.comments.stamp');
+
 // Submissions are rate-limited to blunt spam floods.
 Route::middleware(['magna.api', 'throttle:20,1'])
     ->post('/posts/{slug}/comments', [CommentController::class, 'store'])

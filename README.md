@@ -214,13 +214,19 @@ The delivery API is auto-prefixed at `/api/v1/blog/` and protected by the `magna
 | GET    | `/api/v1/blog/categories`             | The category tree with post counts        |
 | GET    | `/api/v1/blog/tags`                   | Tags with post counts                     |
 | GET    | `/api/v1/blog/posts/{slug}/comments`  | Approved comments (threaded one level)    |
+| GET    | `/api/v1/blog/posts/{slug}/comments/stamp` | A signed `_ts` for a comment form (no-store) |
 | POST   | `/api/v1/blog/posts/{slug}/comments`  | Submit a comment for moderation           |
 | POST   | `/api/v1/blog/posts/{slug}/reactions` | Toggle a reaction                         |
 
 Responses are frontend-agnostic and never expose internal fields (password hashes, soft-delete state).
 Fields are only ever added: since 1.2.0 a post also carries `summary` (its excerpt, else one generated
-from the body) and `url` (its public, language-prefixed path). A comment submission may send the `_ts`
-render stamp a post page issues; when sent, it is verified.
+from the body) and `url` (its public, language-prefixed path). Since 1.2.1 `adjacent` prev/next stay in
+the post's own language, and each entry in `translations` carries the `url` it is served at.
+
+**Comment bot check.** Fetch `GET …/comments/stamp` when your comment form is shown and send the returned
+`_ts` with the submission. A stamp younger than `blog.comments.min_submit_seconds` (default 2) is treated
+as a bot and quietly not stored. The unsigned `form_started_at` field is **deprecated**: it is still honoured
+(it can only make a submission look automated, never admit one) and will be removed in 2.0.
 
 ## Permissions
 

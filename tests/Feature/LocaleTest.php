@@ -76,8 +76,10 @@ it('exposes sibling translations sharing a translation group', function (): void
         ->assertOk()
         ->assertJsonPath('data.locale', 'en')
         ->assertJsonPath('data.translations', [
-            ['locale' => 'es', 'slug' => 'post-es'],
-            ['locale' => 'fr', 'slug' => 'post-fr'],
+            // Neither language is one this site serves, so both live at the
+            // bare path (1.2.1 added `url`).
+            ['locale' => 'es', 'slug' => 'post-es', 'url' => '/blog/post-es'],
+            ['locale' => 'fr', 'slug' => 'post-fr', 'url' => '/blog/post-fr'],
         ]);
 });
 

@@ -10,6 +10,7 @@ use MagnaCms\Blog\Models\PostMeta;
 use MagnaCms\Blog\Settings\BlogSettings;
 use MagnaCms\Blog\Support\CommentPolicy;
 use MagnaCms\Blog\Support\MetaRegistry;
+use MagnaCms\Blog\Support\PostLocales;
 use MagnaCms\Blog\Support\PostPermalink;
 use MagnaCms\Blog\Support\ReactionService;
 
@@ -29,6 +30,7 @@ final class PostTransformer
         private readonly DynamicBlockResolver $dynamic,
         private readonly MetaRegistry $metaRegistry,
         private readonly ReactionService $reactions,
+        private readonly PostLocales $locales,
     ) {}
 
     private ?PostPermalink $permalink = null;
@@ -114,7 +116,8 @@ final class PostTransformer
      */
     private function adjacent(Post $post, string $direction): ?array
     {
-        $neighbour = $post->adjacent($direction);
+        // In the post's own language, as the post page links it.
+        $neighbour = $post->adjacent($direction, $this->locales->servedIn($post->locale));
 
         return $neighbour === null
             ? null
@@ -163,9 +166,11 @@ final class PostTransformer
 
     /**
      * Sibling translations of a post: other live-public posts sharing its
-     * translation_group, as {locale, slug}. Empty when the post has no group.
+     * translation_group, as {locale, slug, url}. Empty when the post has no
+     * group. `url` (1.2.1) is where that translation is served, locale
+     * prefix included.
      *
-     * @return list<array{locale: string, slug: string}>
+     * @return list<array{locale: string, slug: string, url: string}>
      */
     private function translations(Post $post): array
     {
@@ -173,17 +178,21 @@ final class PostTransformer
             return [];
         }
 
+        $permalink = $this->permalink();
+
+        // The columns a permalink pattern's date and category tokens read.
         $siblings = Post::query()
             ->live()
             ->public()
             ->where('translation_group', $post->translation_group)
             ->whereKeyNot($post->getKey())
+            ->when($permalink->usesCategory(), fn ($query) => $query->with('category:id,slug'))
             ->orderBy('locale')
-            ->get(['locale', 'slug']);
+            ->get(['id', 'locale', 'slug', 'published_at', 'created_at', 'category_id']);
 
         $out = [];
         foreach ($siblings as $sibling) {
-            $out[] = ['locale' => $sibling->locale, 'slug' => $sibling->slug];
+            $out[] = ['locale' => $sibling->locale, 'slug' => $sibling->slug, 'url' => $permalink->url($sibling)];
         }
 
         return $out;

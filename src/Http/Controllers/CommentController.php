@@ -6,6 +6,7 @@ namespace MagnaCms\Blog\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Magna\Frontend\Forms\SignedFormTimestamp;
 use MagnaCms\Blog\Enums\CommentStatus;
 use MagnaCms\Blog\Models\Comment;
 use MagnaCms\Blog\Models\Post;
@@ -60,6 +61,22 @@ class CommentController
                 'awaiting_moderation' => ! $approved,
             ],
         ], 201);
+    }
+
+    /**
+     * GET /api/v1/blog/posts/{slug}/comments/stamp — the signed render time to
+     * send back as `_ts` with a comment, the same bot check the post page's
+     * own form carries. Fetch it when the comment form is shown, not when it
+     * is submitted: a stamp younger than the minimum typing time is refused.
+     */
+    public function stamp(string $slug): JsonResponse
+    {
+        $this->findPost($slug);
+
+        return response()
+            ->json(['_ts' => SignedFormTimestamp::issue(CommentSubmissionHandler::PURPOSE)])
+            ->setPrivate()
+            ->header('Cache-Control', 'no-store, private, max-age=0');
     }
 
     private function findPost(string $slug): Post
