@@ -23,7 +23,7 @@ final class ManifestTest extends TestCase
         // form build on core's 1.6.2 frontend seams (RenderContext,
         // CacheCollector, LocaleUrls, the form-token endpoint) — an older
         // core would fatal on boot or render.
-        $this->assertSame('1.2.0', $manifest->version);
+        $this->assertSame('1.2.1', $manifest->version);
         $this->assertTrue($manifest->isCompatibleWith('1.6.2'));
         $this->assertTrue($manifest->isCompatibleWith('1.9.0'));
         $this->assertFalse($manifest->isCompatibleWith('1.6.1'));

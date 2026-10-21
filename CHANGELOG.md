@@ -5,6 +5,28 @@ All notable changes to Magna Blog are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-10-21
+
+### Fixed
+
+- **The post editor's Publish date was blank, and saving moved the date.** The builder seeded the field
+  with the record's serialised UTC timestamp, which a date-time input cannot show; saving then wrote that
+  UTC time back as the site's local time, shifting the publish date by the site's UTC offset on every save
+  (and with it any date-based permalink). The field now holds the date on the site's own clock.
+- **Delivery API prev/next stay in the post's language.** A French post's `adjacent` links are French
+  posts, as on the post page.
+
+### Added
+
+- `url` on every entry of a post's `translations` in the delivery API — where that translation is served,
+  language prefix included.
+- `GET /api/v1/blog/posts/{slug}/comments/stamp`: a signed `_ts` for API comment forms, the same bot check
+  the post page's form carries.
+
+### Deprecated
+
+- The unsigned `form_started_at` comment field. Still honoured; removal planned for 2.0. Send `_ts` instead.
+
 ## [1.2.0] - 2026-10-21
 
 Requires Magna 1.6.2 or later (its render context, page-cache, locale and form-token seams).

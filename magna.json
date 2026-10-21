@@ -2,7 +2,7 @@
     "name": "magna-cms/blog",
     "displayName": "Blog",
     "description": "Create and manage blog content — posts with an Editor.js block editor, nested categories, tags, revisions, scheduling, and a delivery API for headless frontends.",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "author": "Magna Team",
     "license": "MIT",
     "icon": "art/icon.svg",
