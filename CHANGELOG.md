@@ -5,6 +5,18 @@ All notable changes to Magna Blog are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-10-22
+
+### Added
+
+- **Posts in site kits (`blog:posts`).** A theme's demo content — or a site kit promoted
+  between environments — can now carry posts with their category, tags and featured image.
+  Rows are keyed by slug; content is sanitized like the editor's; an inline featured image
+  must decode as the image type it claims and stay under 5 MB (remote URLs, SVG and path
+  traversal are dropped); categories and tags are created when missing and never renamed;
+  the author is only ever the user applying the kit. `published_days_ago` keeps demo posts
+  recent.
+
 ## [1.2.1] - 2026-10-21
 
 ### Fixed
