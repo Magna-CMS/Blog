@@ -22,7 +22,9 @@ use Magna\Contracts\RegistersCaptchaSurfaces;
 use Magna\Contracts\RegistersCommands;
 use Magna\Contracts\RegistersDataSources;
 use Magna\Contracts\RegistersSettingsPages;
+use Magna\Contracts\RegistersSiteKitSections;
 use Magna\Contracts\RegistersWebhookEvents;
+use Magna\Contracts\SiteKitSection;
 use Magna\Frontend\FrontendPage;
 use Magna\Plugins\Plugin;
 use MagnaCms\Blog\Blocks\BlogPostsBlockResolver;
@@ -55,6 +57,7 @@ use MagnaCms\Blog\Observers\TagObserver;
 use MagnaCms\Blog\Policies\PostPolicy;
 use MagnaCms\Blog\Privacy\PersonalDataService;
 use MagnaCms\Blog\Seo\PostSeoMeta;
+use MagnaCms\Blog\SiteKit\PostsSection;
 use MagnaCms\Blog\Support\CommentSubmissionHandler;
 use MagnaCms\Blog\Support\MetaRegistry;
 use MagnaCms\Blog\Support\Spam\AkismetSpamCheck;
@@ -63,7 +66,7 @@ use MagnaCms\Blog\Support\Spam\SpamCheck;
 use MagnaCms\Blog\Support\VersionedCss;
 use MagnaCms\Blog\Support\VersionedJs;
 
-class BlogPlugin extends Plugin implements HandlesPersonalData, ProvidesFrontendPages, RegistersAdminResources, RegistersBlocks, RegistersCaptchaSurfaces, RegistersCommands, RegistersDataSources, RegistersSettingsPages, RegistersWebhookEvents
+class BlogPlugin extends Plugin implements HandlesPersonalData, ProvidesFrontendPages, RegistersAdminResources, RegistersBlocks, RegistersCaptchaSurfaces, RegistersCommands, RegistersDataSources, RegistersSettingsPages, RegistersSiteKitSections, RegistersWebhookEvents
 {
     public function register(): void
     {
@@ -99,6 +102,18 @@ class BlogPlugin extends Plugin implements HandlesPersonalData, ProvidesFrontend
 
             return $honeypot;
         });
+    }
+
+    /**
+     * Posts travel in site kits under 'blog:posts' — a theme's demo content
+     * can ship real posts, and a site promoted between environments brings
+     * its writing along.
+     *
+     * @return list<SiteKitSection>
+     */
+    public function siteKitSections(): array
+    {
+        return [$this->app->make(PostsSection::class)];
     }
 
     public function boot(): void
