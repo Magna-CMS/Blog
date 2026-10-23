@@ -5,19 +5,20 @@
 <h1 align="center">Magna Blog</h1>
 
 <p align="center">
-  A professional blog and content plugin for <strong>Magna CMS</strong> — public post pages through
-  Magna Pages, and a delivery API for headless frontends.
+  A blog plugin for <a href="https://github.com/Magna-CMS/Magna"><strong>Magna CMS</strong></a>, the
+  open-source Laravel headless CMS — public post pages through Magna Pages, and a delivery API for
+  headless frontends.
 </p>
 
 <p align="center">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
   <a href="composer.json"><img alt="PHP" src="https://img.shields.io/badge/php-%5E8.3-777bb4.svg"></a>
-  <a href="https://github.com/Magna-CMS"><img alt="Magna CMS" src="https://img.shields.io/badge/Magna%20CMS-%3E%3D1.6-6366f1.svg"></a>
+  <a href="https://github.com/Magna-CMS/Magna"><img alt="Magna CMS" src="https://img.shields.io/badge/Magna%20CMS-%3E%3D1.6.2-6366f1.svg"></a>
 </p>
 
-Magna Blog manages blog content through the Magna admin panel using an **Editor.js** block editor, and
-exposes a clean, read-only delivery API for any frontend — a headless site, a static build, or a native
-app.
+Magna Blog is a plugin for [Magna CMS](https://github.com/Magna-CMS/Magna). It manages blog content
+through the Magna admin panel using an **Editor.js** block editor, and exposes a read-only delivery API
+for any frontend — a headless site, a static build, or a native app.
 
 With **Magna Pages** installed, every published post is also served as a page of your site, at its
 permalink and inside your theme's layout. Without Pages the blog stays headless: it owns authoring,
@@ -55,7 +56,8 @@ meta description, canonical URL, focus keyword, robots directives and social car
 
 ### Settings
 
-General, slugs, permalinks, editor, content and comment options — all in the admin panel.
+General, slugs, permalinks, editor, fonts, content, custom fields and comment options — all in the
+admin panel.
 
 ![The Blog settings page](art/screenshots/settings.png)
 
@@ -103,9 +105,13 @@ General, slugs, permalinks, editor, content and comment options — all in the a
 ## Requirements
 
 - PHP **8.3+**
-- **Magna CMS** 1.6.2 or later (provides Filament, media library, users, permissions, settings,
-  revisions, privacy and webhook subsystems)
+- **[Magna CMS](https://github.com/Magna-CMS/Magna)** 1.6.2 or later, below 2.0 (provides Laravel,
+  Filament, the media library, users, permissions, settings, revisions, privacy and webhook subsystems)
 - **Magna Pages** — optional, for public post pages
+- **Magna SEO** — optional, for per-post SEO metadata
+- Laravel's task scheduler running (`php artisan schedule:run` every minute from cron) — scheduled
+  posts are published by `blog:publish-scheduled`, and buffered view counts are saved by
+  `blog:flush-views`
 
 ## Installation
 
@@ -126,8 +132,8 @@ Available**.
 ## Configuration
 
 Backend and content settings are edited from **Admin → Blog → Settings** (general, slugs, permalinks,
-editor, content and comments). Infrastructure options — the comment spam driver and reaction types — live
-in `config/blog.php` and are environment-driven:
+editor, fonts, content, custom fields and comments). Infrastructure options — the comment spam driver
+and reaction types — live in `config/blog.php` and are environment-driven:
 
 ```dotenv
 BLOG_COMMENT_SPAM_DRIVER=honeypot   # or "akismet"
@@ -141,6 +147,17 @@ BLOG_DEFAULT_LOCALE=en
 Create and manage posts from **Admin → Blog**. The full-screen builder pairs an Editor.js canvas with a
 tabbed sidebar for post settings, block settings and (when the Magna SEO plugin is installed) SEO.
 
+### Artisan commands
+
+| Command | What it does |
+| ------- | ------------ |
+| `php artisan blog:import-wxr <file>` | Import posts, categories and tags from a WordPress WXR (`.xml`) export |
+| `php artisan blog:export [--out=<file>]` | Export all blog content to a JSON bundle (default `storage/app/blog-export.json`) |
+| `php artisan blog:import <file>` | Import a JSON bundle created by `blog:export` (idempotent, matched by slug) |
+| `php artisan blog:reindex` | Rebuild the search index column for all posts |
+| `php artisan blog:publish-scheduled` | Publish scheduled posts whose date has passed (runs every minute via the scheduler) |
+| `php artisan blog:flush-views` | Save buffered view counts to the database (runs every five minutes via the scheduler) |
+
 ## Public post pages
 
 With **Magna Pages** installed, each published, public post is served at the **Permalink pattern** set
@@ -150,7 +167,7 @@ description as the page's meta. For the `/blog` listing, place the **Blog posts*
 - **Patterns** — tokens `{slug}`, `{year}`, `{month}`, `{day}` and `{category}`, each a whole path segment
   (`/blog/{year}/{slug}`, not `/blog/{year}-{slug}`). `{slug}` is required; a pattern the site cannot
   serve falls back to `/blog/{slug}` and logs a warning. Every blog link, and the sitemap when Magna SEO is
-  installed, follow the same pattern; only a post's canonical path answers.
+  installed, follows the same pattern; only a post's canonical path answers.
 - **Visibility** — drafts, scheduled, private and password-protected posts, and unknown slugs, get the
   site's 404. A Pages page published at the same path wins over the post.
 - **Theming** — themes style the page with CSS: `<article>` sits directly inside
