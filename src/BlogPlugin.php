@@ -24,6 +24,7 @@ use Magna\Contracts\RegistersDataSources;
 use Magna\Contracts\RegistersSettingsPages;
 use Magna\Contracts\RegistersSiteKitSections;
 use Magna\Contracts\RegistersWebhookEvents;
+use Magna\Contracts\RemovesSiteKitRows;
 use Magna\Contracts\SiteKitSection;
 use Magna\Frontend\FrontendPage;
 use Magna\Plugins\Plugin;
@@ -58,6 +59,7 @@ use MagnaCms\Blog\Policies\PostPolicy;
 use MagnaCms\Blog\Privacy\PersonalDataService;
 use MagnaCms\Blog\Seo\PostSeoMeta;
 use MagnaCms\Blog\SiteKit\PostsSection;
+use MagnaCms\Blog\SiteKit\RemovablePostsSection;
 use MagnaCms\Blog\Support\CommentSubmissionHandler;
 use MagnaCms\Blog\Support\MetaRegistry;
 use MagnaCms\Blog\Support\Spam\AkismetSpamCheck;
@@ -113,7 +115,9 @@ class BlogPlugin extends Plugin implements HandlesPersonalData, ProvidesFrontend
      */
     public function siteKitSections(): array
     {
-        return [$this->app->make(PostsSection::class)];
+        // The removable variant needs an SDK that defines RemovesSiteKitRows;
+        // on an older one, posts simply stay when a theme's demo is removed.
+        return [$this->app->make(interface_exists(RemovesSiteKitRows::class) ? RemovablePostsSection::class : PostsSection::class)];
     }
 
     public function boot(): void

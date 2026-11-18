@@ -5,6 +5,17 @@ All notable changes to Magna Blog are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Demo posts leave with their theme's demo content.** With a plugin SDK that defines
+  `RemovesSiteKitRows`, the `blog:posts` section can remove the posts a theme's demo
+  brought, when the site still has them exactly as shipped. They are deleted outright, not
+  trashed: a trashed post keeps its slug and would block both a re-import and the next
+  theme's post of the same name. A featured image goes with its post unless another post
+  uses it. Categories and tags stay. On an older SDK nothing changes.
+
 ## [1.3.1] - 2026-11-18
 
 ### Fixed
