@@ -6,8 +6,10 @@ use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 use Magna\Auth\Role;
+use Magna\Seo\Dashboard\ContentOverview;
 use Magna\Seo\Enums\SubjectType;
 use Magna\Seo\Registry\SeoSourceRegistry;
+use Magna\Seo\Scan\KeywordCoverage;
 use Magna\Seo\SeoPlugin;
 use Magna\Seo\Subjects\SeoSubject;
 use Magna\Seo\Support\SeoMetaRepository;
@@ -31,7 +33,7 @@ beforeEach(function (): void {
         test()->markTestSkipped('magna/seo is not installed; the SEO bridge has nothing to bind to.');
     }
 
-    $this->enablePlugin('magna/seo');
+    $this->enablePlugin('magna-cms/seo');
     $this->enablePlugin('magna-cms/blog');
     Filament::setCurrentPanel(Filament::getPanel('magna'));
 
@@ -176,4 +178,31 @@ it('updates SEO meta from the edit page', function (): void {
     expect($meta?->title)->toBe('Edited SEO Title')
         ->and($meta?->robots_index)->toBeFalse()
         ->and($post->fresh()->status)->toBe(PostStatus::Published);
+});
+
+it('carries the post key on its SEO subject', function (): void {
+    $post = livePost();
+
+    expect(app(BlogSeoSource::class)->resolve('hello-world')?->modelId)->toBe((string) $post->getKey());
+});
+
+it('counts a focus keyword saved on a post as keyword coverage', function (): void {
+    $post = livePost();
+
+    PostSeoMeta::write($post, ['focus_keyword' => 'hello world']);
+
+    $report = app(KeywordCoverage::class)->report();
+
+    expect($report['covered'])->toBe(1)
+        ->and($report['uncovered'])->toBe([]);
+});
+
+it('gives a post an editable row on the SEO Content list', function (): void {
+    $post = livePost();
+
+    $rows = app(ContentOverview::class)->rows();
+
+    expect($rows)->toHaveCount(1)
+        ->and($rows[0]['modelType'])->toBe(Post::class)
+        ->and($rows[0]['modelId'])->toBe((string) $post->getKey());
 });

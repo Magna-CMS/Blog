@@ -101,6 +101,7 @@ final class BlogSeoSource implements SeoSubjectSource
                 : null,
             alternates: $this->alternates($post, $permalink),
             images: $this->images($post),
+            modelId: (string) $post->getKey(),
         );
     }
 
