@@ -49,7 +49,7 @@ class PostsSection implements SiteKitSection
     /** @return list<array<string, mixed>> */
     public function export(): array
     {
-        return Post::query()
+        return array_values(Post::query()
             ->with(['category:id,slug,name', 'tags:id,slug,name'])
             ->orderBy('slug')
             ->get()
@@ -69,8 +69,7 @@ class PostsSection implements SiteKitSection
                 'allow_comments' => $p->allow_comments,
                 'published_at' => $p->published_at?->toIso8601String(),
             ], fn ($v): bool => $v !== null))
-            ->values()
-            ->all();
+            ->all());
     }
 
     /**
@@ -241,7 +240,7 @@ class PostsSection implements SiteKitSection
         $bytes = base64_decode($m[2], true);
         $info = $bytes === false ? false : @getimagesizefromstring($bytes);
 
-        if ($bytes === false || strlen($bytes) > self::MAX_IMAGE_BYTES || $info === false || ($info['mime'] ?? null) !== $m[1]) {
+        if ($bytes === false || strlen($bytes) > self::MAX_IMAGE_BYTES || $info === false || $info['mime'] !== $m[1]) {
             return null;
         }
 
