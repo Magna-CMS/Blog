@@ -65,6 +65,16 @@ echo "pre-commit: pint --test (staged files)"
 
 staged_src=$(printf '%s\n' $staged_any_php | grep -E '^src/' || true)
 
+# Files the config excludes are left out here too. Handed to phpstan by name,
+# an excluded file is dropped anyway, and a commit touching only excluded
+# files then fails with "No files found to analyse." although nothing is wrong.
+if [ -n "$staged_src" ] && [ -f phpstan.neon.dist ]; then
+    excluded=$(sed -n '/^[[:space:]]*excludePaths:/,/^[[:space:]]*[A-Za-z]/s/^[[:space:]]*-[[:space:]]*//p' phpstan.neon.dist)
+    if [ -n "$excluded" ]; then
+        staged_src=$(printf '%s\n' $staged_src | grep -vxF "$excluded" || true)
+    fi
+fi
+
 if [ -n "$staged_src" ] && [ -f phpstan.neon.dist ]; then
     echo "pre-commit: phpstan (staged src files)"
     # shellcheck disable=SC2086
