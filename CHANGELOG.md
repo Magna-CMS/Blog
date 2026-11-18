@@ -5,6 +5,19 @@ All notable changes to Magna Blog are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-11-18
+
+### Fixed
+
+- **Magna SEO could not pair a post with its SEO settings.** Post subjects now carry the post's id.
+  A focus keyword saved in the post editor showed after reload, but the SEO dashboard still
+  counted every post as having none. SEO Content also offered no edit fields for posts, and
+  scores were never stored. A post marked noindex now also leaves the sitemap and `llms.txt`.
+  Release together with Magna SEO 1.2.2.
+- **The pre-commit hook refused commits that only touched files phpstan excludes** ("No files
+  found to analyse."). Excluded paths are now filtered out first.
+- Two phpstan errors in the site-kit posts section, with no change in behaviour.
+
 ## [1.3.0] - 2026-10-22
 
 ### Added
